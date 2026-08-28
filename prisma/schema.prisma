@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            BigInt         @id
+  username      String?
+  firstName     String?
+  isAdmin       Boolean        @default(false)
+  addedById     BigInt?
+  addedBy       User?          @relation("UserAddedBy", fields: [addedById], references: [id])
+  addedUsers    User[]         @relation("UserAddedBy")
+  createdAt     DateTime       @default(now())
+  presentations Presentation[]
+}
+
+model Presentation {
+  id           String             @id @default(cuid())
+  userId       BigInt
+  user         User               @relation(fields: [userId], references: [id])
+  topic        String
+  slideCount   Int
+  language     String
+  theme        String
+  status       PresentationStatus @default(PENDING)
+  errorMessage String?
+  createdAt    DateTime           @default(now())
+}
+
+enum PresentationStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
