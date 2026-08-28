@@ -1873,9 +1873,12 @@ import { AiClient, extractCodeBlock } from "../../src/ai/client";
 const createMock = vi.fn();
 
 vi.mock("@anthropic-ai/sdk", () => ({
-  default: vi.fn().mockImplementation(() => ({
-    messages: { create: createMock },
-  })),
+  // Must be a `function` expression, not an arrow function: vitest's spy
+  // calls Reflect.construct() on this when `new Anthropic(...)` runs, and
+  // arrow functions are never constructible (throws "is not a constructor").
+  default: vi.fn().mockImplementation(function () {
+    return { messages: { create: createMock } };
+  }),
 }));
 
 describe("extractCodeBlock", () => {
