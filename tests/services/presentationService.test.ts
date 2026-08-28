@@ -71,4 +71,22 @@ describe("PresentationService.generate", () => {
     expect(result.success).toBe(false);
     expect(result.errorMessage).toContain("bad code");
   });
+
+  it("resolves with success:false and does not call markFailed when create() itself throws", async () => {
+    const aiClient = createMockAiClient('const s = addSlide(); addText(s, "Salom");');
+    const repo = createMockPresentationRepository();
+    repo.create = vi.fn().mockRejectedValue(new Error("db down"));
+    const service = new PresentationService(aiClient, repo, createMockIconCache());
+
+    const result = await service.generate({
+      userId: 1n,
+      topic: "Test",
+      slideCount: 1,
+      language: "o'zbek",
+      themeName: "corporate",
+    });
+
+    expect(result).toEqual({ success: false, errorMessage: "db down" });
+    expect(repo.markFailed).not.toHaveBeenCalled();
+  });
 });

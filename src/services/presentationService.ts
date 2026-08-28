@@ -30,16 +30,19 @@ export class PresentationService {
   ) {}
 
   async generate(input: GeneratePresentationInput): Promise<GeneratePresentationResult> {
-    const theme = getTheme(input.themeName);
-    const record = await this.presentationRepository.create({
-      userId: input.userId,
-      topic: input.topic,
-      slideCount: input.slideCount,
-      language: input.language,
-      theme: input.themeName,
-    });
+    let recordId: string | undefined;
 
     try {
+      const theme = getTheme(input.themeName);
+      const record = await this.presentationRepository.create({
+        userId: input.userId,
+        topic: input.topic,
+        slideCount: input.slideCount,
+        language: input.language,
+        theme: input.themeName,
+      });
+      recordId = record.id;
+
       const code = await this.aiClient.generateSlideCode({
         topic: input.topic,
         slideCount: input.slideCount,
@@ -62,11 +65,13 @@ export class PresentationService {
       }
 
       const buffer = await builder.toBuffer();
-      await this.presentationRepository.markSuccess(record.id);
+      await this.presentationRepository.markSuccess(recordId);
       return { success: true, buffer };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      await this.presentationRepository.markFailed(record.id, message);
+      if (recordId) {
+        await this.presentationRepository.markFailed(recordId, message);
+      }
       return { success: false, errorMessage: message };
     }
   }
