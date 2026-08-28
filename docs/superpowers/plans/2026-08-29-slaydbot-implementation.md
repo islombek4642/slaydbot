@@ -2906,7 +2906,11 @@ export function createPresentationWizard(presentationService: PresentationServic
     );
 
     if (result.success && result.buffer) {
-      await ctx.replyWithDocument(new InputFile(result.buffer, `${topic}.pptx`), {
+      // grammY throws synchronously if a filename contains \r or \n (header
+      // injection guard) - a plain `${topic}.pptx` crashes on any multi-line
+      // topic (e.g. Shift+Enter), discarding an already-generated file.
+      const safeFilename = `${topic.replace(/[\r\n]+/g, " ").trim().slice(0, 60) || "taqdimot"}.pptx`;
+      await ctx.replyWithDocument(new InputFile(result.buffer, safeFilename), {
         caption: t("wizard.success"),
       });
     } else {
