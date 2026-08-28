@@ -1,0 +1,54 @@
+{
+  "name": "slaydbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/islombek4642/slaydbot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/islombek4642/slaydbot/issues"
+  },
+  "homepage": "https://github.com/islombek4642/slaydbot#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.122.0",
+    "@grammyjs/conversations": "^2.1.1",
+    "@prisma/client": "^7.10.0",
+    "dotenv": "^17.4.2",
+    "grammy": "^1.46.0",
+    "isolated-vm": "^6.2.0",
+    "pino": "^10.3.1",
+    "pptxgenjs": "^4.0.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-icons": "^5.7.0",
+    "sharp": "^0.35.4",
+    "zod": "^4.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "prisma": "^8.0.0-rc.12",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  }
+}
