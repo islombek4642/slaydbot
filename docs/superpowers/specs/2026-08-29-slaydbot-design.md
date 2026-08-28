@@ -95,16 +95,24 @@ oshiriladi, alohida slash-komandalar orqali emas.
 - Oddiy foydalanuvchi: `🎨 Taqdimot yaratish`
 - Admin/Super-admin uchun qo'shimcha: `⚙️ Admin panel`
 
-**Admin panel (Reply Keyboard tugmasi bosilganda ochiladigan Inline
-Keyboard):**
+**Admin panel (`⚙️ Admin panel` bosilganda Reply Keyboard almashtiriladi —
+yangi sub-menu Reply Keyboard ko'rsatiladi):**
 
 - `➕ Foydalanuvchi qo'shish` — bosilgach bot Telegram ID (yoki foydalanuvchi
   xabarini forward qilish) so'raydi, keyin whitelist'ga qo'shadi
-- `➖ Foydalanuvchi o'chirish` — ro'yxatdan tanlab o'chirish (har bir
-  foydalanuvchi qatorida `❌` tugmasi bilan)
+- `➖ Foydalanuvchi o'chirish` — ro'yxatni chiqaradi, foydalanuvchi ID/ismini
+  matn sifatida yozib tanlaydi, o'chiriladi
 - `📋 Ro'yxat` — barcha ruxsat berilgan foydalanuvchilarni ko'rsatadi
-- `⬆️ Admin qilish` — (faqat SUPER_ADMIN ko'radi) tanlangan foydalanuvchiga
-  ADMIN huquqi beradi
+- `⬆️ Admin qilish` — (faqat SUPER_ADMIN ko'radi) Telegram ID so'raladi,
+  ADMIN huquqi beriladi
+- `🔙 Orqaga` — asosiy Reply Keyboard'ga qaytaradi
+
+Har bir admin harakati (`/adduser`, `/promote` va h.k. ekvivalenti) alohida
+`conversations` bosqichi sifatida amalga oshiriladi: tugma bosiladi → bot ID
+kiritishni so'raydi (matn) → tasdiqlaydi. Butun bot bo'ylab **Inline
+Keyboard faqat wizard ichidagi bir martalik tanlovlar uchun** ishlatiladi
+(masalan, slaydlar soni, til, tema, "Bekor qilish") — navigatsiya va
+menyular har doim Reply Keyboard orqali.
 
 **Access-control middleware:** ro'yxatda yo'q foydalanuvchi har qanday
 xabar/tugma bosishida "Kirish cheklangan" xabarini oladi.
