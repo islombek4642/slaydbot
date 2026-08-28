@@ -997,11 +997,13 @@ export class PresentationBuilder {
   }
 
   addText(slideIndex: number, text: string, options: PptxGenJS.TextPropsOptions = {}): void {
-    this.getSlide(slideIndex).addText(text, options);
+    // pptxgenjs mutates the options object in place (fills in defaults); clone
+    // it so callers never see their own objects change out from under them.
+    this.getSlide(slideIndex).addText(text, { ...options });
   }
 
   addImage(slideIndex: number, options: PptxGenJS.ImageProps): void {
-    this.getSlide(slideIndex).addImage(options);
+    this.getSlide(slideIndex).addImage({ ...options });
   }
 
   addChart(
@@ -1010,11 +1012,11 @@ export class PresentationBuilder {
     data: PptxGenJS.OptsChartData[],
     options: PptxGenJS.IChartOpts = {}
   ): void {
-    this.getSlide(slideIndex).addChart(type, data, options);
+    this.getSlide(slideIndex).addChart(type, data, { ...options });
   }
 
   addShape(slideIndex: number, shapeType: PptxGenJS.SHAPE_NAME, options: PptxGenJS.ShapeProps = {}): void {
-    this.getSlide(slideIndex).addShape(shapeType, options);
+    this.getSlide(slideIndex).addShape(shapeType, { ...options });
   }
 
   slideCount(): number {
