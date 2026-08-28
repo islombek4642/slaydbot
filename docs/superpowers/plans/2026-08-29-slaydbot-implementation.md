@@ -2294,7 +2294,10 @@ Expected: FAIL — module not found
 import type { Context } from "grammy";
 import type { ConversationFlavor } from "@grammyjs/conversations";
 
-export type MyContext = Context & ConversationFlavor;
+// ConversationFlavor is generic (ConversationFlavor<C extends Context>),
+// not a plain type — `Context & ConversationFlavor` does not compile
+// ("Generic type 'ConversationFlavor' requires 1 type argument(s)").
+export type MyContext = ConversationFlavor<Context>;
 ```
 
 ```ts
