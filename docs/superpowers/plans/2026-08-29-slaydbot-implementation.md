@@ -1007,13 +1007,13 @@ export class PresentationBuilder {
   addChart(
     slideIndex: number,
     type: PptxGenJS.CHART_NAME,
-    data: PptxGenJS.IChartMulti[],
+    data: PptxGenJS.OptsChartData[],
     options: PptxGenJS.IChartOpts = {}
   ): void {
     this.getSlide(slideIndex).addChart(type, data, options);
   }
 
-  addShape(slideIndex: number, shapeType: PptxGenJS.ShapeType, options: PptxGenJS.ShapeProps = {}): void {
+  addShape(slideIndex: number, shapeType: PptxGenJS.SHAPE_NAME, options: PptxGenJS.ShapeProps = {}): void {
     this.getSlide(slideIndex).addShape(shapeType, options);
   }
 
@@ -1509,11 +1509,11 @@ export function createBridgeFunctions(builder: PresentationBuilder, iconCache: I
     addChart: (
       slideIndex: number,
       type: PptxGenJS.CHART_NAME,
-      data: PptxGenJS.IChartMulti[],
+      data: PptxGenJS.OptsChartData[],
       options: PptxGenJS.IChartOpts = {}
     ) => builder.addChart(slideIndex, type, data, options),
 
-    addShape: (slideIndex: number, shapeType: PptxGenJS.ShapeType, options: PptxGenJS.ShapeProps = {}) =>
+    addShape: (slideIndex: number, shapeType: PptxGenJS.SHAPE_NAME, options: PptxGenJS.ShapeProps = {}) =>
       builder.addShape(slideIndex, shapeType, options),
 
     addIcon: (slideIndex: number, iconName: string, options: AddIconOptions) => {
