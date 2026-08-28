@@ -1602,6 +1602,16 @@ Expected: FAIL — module not found
 
 - [ ] **Step 3: Write the implementation**
 
+> **Correction (discovered during implementation):** the manual
+> `ivm.Reference` + `applySync`-via-`eval`-shim below was unnecessary.
+> `isolated-vm`'s real API (v6.2.0, confirmed against
+> `node_modules/isolated-vm/README.md` and `isolated-vm.d.ts`) auto-wraps a
+> plain function passed to `jail.set(name, fn)` as a synchronous `Callback`
+> by default — it already appears in the isolate as an ordinary function,
+> no `.then()`, no `applySync` shim, no `__host_` naming needed. This was
+> independently security-verified (Function-constructor escape attempts,
+> `require`/`process`/`fs` access, timeout-under-load) with no issues found.
+
 ```ts
 // src/pptx/sandbox.ts
 import ivm from "isolated-vm";
@@ -1613,28 +1623,30 @@ export interface SandboxResult {
   error?: string;
 }
 
+/**
+ * Runs Claude-generated JavaScript inside an isolated-vm isolate.
+ *
+ * The isolate is a fresh v8 context: it has no `require`, `process`, `fetch`,
+ * or any other Node/browser global. The only things reachable from inside
+ * the sandboxed code are the functions listed in `bridgeFunctions`, which are
+ * exposed as plain global functions. Because isolated-vm auto-wraps plain
+ * functions passed across the isolate boundary as *synchronous* callbacks by
+ * default, calling e.g. `addSlide()` from sandboxed code blocks and returns
+ * the host function's return value directly - no `.then()` required.
+ */
 export async function runInSandbox(code: string, bridgeFunctions: BridgeFunctions): Promise<SandboxResult> {
   const isolate = new ivm.Isolate({ memoryLimit: SANDBOX_MEMORY_LIMIT_MB });
+
   try {
     const context = await isolate.createContext();
     const jail = context.global;
-    await jail.set("global", jail.derefInto());
 
-    const bridgeNames = Object.keys(bridgeFunctions);
-    for (const name of bridgeNames) {
-      await jail.set(
-        `__host_${name}`,
-        new ivm.Reference((...args: unknown[]) => bridgeFunctions[name](...args))
-      );
+    for (const [name, fn] of Object.entries(bridgeFunctions)) {
+      // Passing a plain function is auto-wrapped by isolated-vm as a
+      // synchronous Callback, so it appears in the isolate as a normal
+      // synchronous function.
+      await jail.set(name, (...args: unknown[]) => fn(...args));
     }
-
-    const shim = bridgeNames
-      .map(
-        (name) =>
-          `function ${name}(...args) { return __host_${name}.applySync(undefined, args, { arguments: { copy: true }, result: { copy: true } }); }`
-      )
-      .join("\n");
-    await context.eval(shim);
 
     const script = await isolate.compileScript(code);
     await script.run(context, { timeout: SANDBOX_TIMEOUT_MS });
@@ -1643,7 +1655,9 @@ export async function runInSandbox(code: string, bridgeFunctions: BridgeFunction
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   } finally {
-    isolate.dispose();
+    if (!isolate.isDisposed) {
+      isolate.dispose();
+    }
   }
 }
 ```
