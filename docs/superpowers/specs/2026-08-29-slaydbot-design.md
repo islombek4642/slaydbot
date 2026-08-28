@@ -35,10 +35,10 @@ kelajakda to'lov, yangi temalar va yangi tillar qo'shilishi rejalashtirilgan.
 ```
 src/
 ├── bot/            # grammY: handlers, conversations (wizard), middlewares
-│   ├── handlers/       # /start, /admin, /help va h.k.
-│   ├── conversations/  # ko'p bosqichli "taqdimot yaratish" wizard
+│   ├── handlers/       # /start, /help + reply/inline tugma callback'lari
+│   ├── conversations/  # ko'p bosqichli "taqdimot yaratish" va "admin" wizard'lari
 │   ├── middlewares/    # access-control (whitelist tekshirish)
-│   └── keyboards/      # inline tugma generatorlari
+│   └── keyboards/      # reply va inline tugma generatorlari
 ├── ai/             # Claude API bilan ishlash
 │   ├── client.ts       # Anthropic SDK wrapper
 │   ├── designGuide.ts  # dizayn qo'llanma matni (rasmiy pptx-skill'dan
@@ -84,15 +84,30 @@ DB'dagi `User` jadvalida bo'lishning o'zi botdan foydalanish huquqini
 bildiradi (alohida "oddiy foydalanuvchi" rol nomi yo'q) — `isAdmin: boolean`
 maydoni faqat boshqaruv huquqini belgilaydi.
 
-**Admin buyruqlari:**
+**Buyruqlar siyosati:** Telegram komandalar menyusida (BotFather orqali
+ro'yxatdan o'tkaziladigan) faqat `/start` va `/help` bo'ladi. Qolgan barcha
+harakatlar — admin boshqaruvi ham, taqdimot yaratish oqimi ham — Reply
+Keyboard (doimiy pastki tugmalar) va Inline Keyboard orqali amalga
+oshiriladi, alohida slash-komandalar orqali emas.
 
-- `/adduser <telegram_id>` — foydalanuvchini qo'shish
-- `/removeuser <telegram_id>` — olib tashlash
-- `/listusers` — ro'yxatni ko'rish
-- `/promote <telegram_id>` — (faqat SUPER_ADMIN) ADMIN huquqi berish
+**Asosiy menyu (Reply Keyboard, `/start` bosilganda ko'rsatiladi):**
+
+- Oddiy foydalanuvchi: `🎨 Taqdimot yaratish`
+- Admin/Super-admin uchun qo'shimcha: `⚙️ Admin panel`
+
+**Admin panel (Reply Keyboard tugmasi bosilganda ochiladigan Inline
+Keyboard):**
+
+- `➕ Foydalanuvchi qo'shish` — bosilgach bot Telegram ID (yoki foydalanuvchi
+  xabarini forward qilish) so'raydi, keyin whitelist'ga qo'shadi
+- `➖ Foydalanuvchi o'chirish` — ro'yxatdan tanlab o'chirish (har bir
+  foydalanuvchi qatorida `❌` tugmasi bilan)
+- `📋 Ro'yxat` — barcha ruxsat berilgan foydalanuvchilarni ko'rsatadi
+- `⬆️ Admin qilish` — (faqat SUPER_ADMIN ko'radi) tanlangan foydalanuvchiga
+  ADMIN huquqi beradi
 
 **Access-control middleware:** ro'yxatda yo'q foydalanuvchi har qanday
-buyruqqa "Kirish cheklangan" xabarini oladi.
+xabar/tugma bosishida "Kirish cheklangan" xabarini oladi.
 
 Hozircha kunlik/oylik foydalanish limiti YO'Q (to'lov tizimi bilan birga
 kelajakda qo'shiladi).
@@ -102,7 +117,8 @@ kelajakda qo'shiladi).
 `@grammyjs/conversations` orqali ko'p bosqichli suhbat:
 
 ```
-/start → [ruxsat tekshiriladi]
+/start → [ruxsat tekshiriladi] → asosiy Reply Keyboard ko'rsatiladi
+  → "🎨 Taqdimot yaratish" tugmasi bosiladi
   → "Taqdimot mavzusini yozing" (matn kiritish)
   → "Nechta slayd?" [5] [10] [15] [20] [AI tanlasin]
   → "Til?" [O'zbek] [Rus] [Ingliz]
