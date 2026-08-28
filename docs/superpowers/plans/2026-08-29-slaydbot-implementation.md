@@ -2180,6 +2180,14 @@ export interface GeneratePresentationResult {
   errorMessage?: string;
 }
 
+> **Correction (discovered during review):** the original version below ran
+> `getTheme`/`create` before the `try` block, so a DB error or invalid theme
+> name would make `generate()` reject instead of honoring its
+> "never throws, always returns a result" contract. Fixed by moving both
+> inside `try` and tracking `recordId` so `markFailed` is only called when a
+> record actually exists.
+
+```ts
 export class PresentationService {
   constructor(
     private readonly aiClient: AiClient,
@@ -2188,16 +2196,18 @@ export class PresentationService {
   ) {}
 
   async generate(input: GeneratePresentationInput): Promise<GeneratePresentationResult> {
-    const theme = getTheme(input.themeName);
-    const record = await this.presentationRepository.create({
-      userId: input.userId,
-      topic: input.topic,
-      slideCount: input.slideCount,
-      language: input.language,
-      theme: input.themeName,
-    });
-
+    let recordId: string | undefined;
     try {
+      const theme = getTheme(input.themeName);
+      const record = await this.presentationRepository.create({
+        userId: input.userId,
+        topic: input.topic,
+        slideCount: input.slideCount,
+        language: input.language,
+        theme: input.themeName,
+      });
+      recordId = record.id;
+
       const code = await this.aiClient.generateSlideCode({
         topic: input.topic,
         slideCount: input.slideCount,
@@ -2220,11 +2230,13 @@ export class PresentationService {
       }
 
       const buffer = await builder.toBuffer();
-      await this.presentationRepository.markSuccess(record.id);
+      await this.presentationRepository.markSuccess(recordId);
       return { success: true, buffer };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      await this.presentationRepository.markFailed(record.id, message);
+      if (recordId) {
+        await this.presentationRepository.markFailed(recordId, message);
+      }
       return { success: false, errorMessage: message };
     }
   }
