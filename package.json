@@ -31,10 +31,12 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
     "@grammyjs/conversations": "^2.1.1",
+    "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "dotenv": "^17.4.2",
     "grammy": "^1.46.0",
     "isolated-vm": "^6.2.0",
+    "pg": "^8.23.0",
     "pino": "^10.3.1",
     "pptxgenjs": "^4.0.1",
     "react": "^19.2.8",
@@ -45,6 +47,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.4.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "prisma": "^7.10.0",
