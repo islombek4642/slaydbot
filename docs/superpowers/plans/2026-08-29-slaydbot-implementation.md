@@ -31,6 +31,7 @@ package.json, tsconfig.json, vitest.config.ts, .gitignore, .env.example
 Dockerfile, docker-compose.yml
 scripts/deploy.sh
 prisma/schema.prisma
+prisma.config.ts
 src/
   index.ts                              # entrypoint: webhook HTTP server
   logger.ts
@@ -41,7 +42,7 @@ src/
     locales/uz.json
     t.ts
   db/
-    client.ts                           # createDbClient()
+    client.ts                           # createDbClient(databaseUrl) via @prisma/adapter-pg
     repositories/
       userRepository.ts
       presentationRepository.ts
@@ -497,6 +498,15 @@ git commit -m "feat: add uz locale and translation lookup helper"
 
 - [ ] **Step 1: Write the schema**
 
+> **Correction (discovered during implementation):** the installed version is
+> Prisma 7.10.0, which removed `url = env("DATABASE_URL")` from the
+> `datasource` block (hard validation error P1012) AND removed implicit
+> env-based connection from a bare `new PrismaClient()`. A driver adapter
+> must be constructed explicitly and passed to the client, and CLI commands
+> (`prisma generate`/`migrate deploy`) need a `prisma.config.ts` with the
+> datasource URL. The schema and client code below reflect this; see the
+> added `prisma.config.ts` step.
+
 ```prisma
 // prisma/schema.prisma
 generator client {
@@ -505,7 +515,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -540,33 +549,72 @@ enum PresentationStatus {
 }
 ```
 
-- [ ] **Step 2: Write the DB client factory**
+- [ ] **Step 2: Install the Postgres driver adapter**
+
+Run: `npm install @prisma/adapter-pg pg && npm install -D @types/pg`
+
+- [ ] **Step 3: Write the DB client factory**
 
 ```ts
 // src/db/client.ts
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-export function createDbClient(): PrismaClient {
-  return new PrismaClient();
+export function createDbClient(databaseUrl: string): PrismaClient {
+  const adapter = new PrismaPg({ connectionString: databaseUrl });
+  return new PrismaClient({ adapter });
 }
 
 export type Db = PrismaClient;
 ```
 
-- [ ] **Step 3: Generate the Prisma client**
+Note the signature takes `databaseUrl` explicitly (consistent with this
+project's rule that only the entrypoint reads `process.env` — see Task 2).
+The entrypoint (Task 27) calls `createDbClient(env.DATABASE_URL)`.
+
+- [ ] **Step 4: Write prisma.config.ts**
+
+The Prisma CLI (`prisma generate`, `prisma migrate deploy`) needs its own
+config file for the datasource URL, separate from the runtime client above:
+
+```ts
+// prisma.config.ts
+import "dotenv/config";
+import { defineConfig, env } from "@prisma/config";
+
+export default defineConfig({
+  datasource: {
+    url: env("DATABASE_URL"),
+  },
+});
+```
+
+(Verified against `node_modules/@prisma/config/dist/index.d.ts` on the
+installed 7.10.0 — `defineConfig`/`env` are exported from `@prisma/config`,
+not `prisma/config`. The `import "dotenv/config"` line is required: `env()`
+reads `process.env` directly and does not load `.env` itself, so without
+this import the Prisma CLI fails with `PrismaConfigEnvError` on a fresh
+checkout.)
+
+- [ ] **Step 5: Generate the Prisma client**
 
 Run: `npx prisma generate`
 Expected: `✔ Generated Prisma Client`
 
-Note: this task has no automated test — it defines schema/types consumed and
-tested through the repositories in Tasks 6–7. Running `prisma generate` is
-this task's verification step (it fails loudly on a schema syntax error).
+- [ ] **Step 6: Validate the schema and config**
 
-- [ ] **Step 4: Commit**
+Run: `npx prisma validate`
+Expected: schema is valid, no P1012 or config errors.
+
+Note: this task has no unit test — it defines schema/types consumed and
+tested through the repositories in Tasks 6–7. `prisma generate` +
+`prisma validate` are this task's verification steps.
+
+- [ ] **Step 7: Commit**
 
 ```bash
-git add prisma/schema.prisma src/db/client.ts
-git commit -m "feat: add Prisma schema (User, Presentation) and DB client factory"
+git add prisma/schema.prisma prisma.config.ts src/db/client.ts package.json package-lock.json
+git commit -m "feat: add Prisma schema (User, Presentation) and driver-adapter DB client"
 ```
 
 ---
@@ -3067,7 +3115,7 @@ import { createLogger } from "./logger";
 async function main(): Promise<void> {
   const env = loadEnv();
   const logger = createLogger();
-  const db = createDbClient();
+  const db = createDbClient(env.DATABASE_URL);
   const userRepository = new UserRepository(db);
   const presentationRepository = new PresentationRepository(db);
 
