@@ -2750,7 +2750,7 @@ export function createListUsersHandler(userRepository: UserRepository) {
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `npx vitest run tests/bot/handlers`
-Expected: 4 passed
+Expected: 5 passed
 
 - [ ] **Step 5: Commit**
 
