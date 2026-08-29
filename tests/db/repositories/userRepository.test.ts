@@ -16,7 +16,7 @@ function createMockDb() {
 describe("UserRepository", () => {
   it("isAllowed returns true when the user exists", async () => {
     const db = createMockDb();
-    db.user.findUnique.mockResolvedValue({ id: 1n, isAdmin: false });
+    db.user.findUnique.mockResolvedValue({ id: 1n });
     const repo = new UserRepository(db as any);
     await expect(repo.isAllowed(1n)).resolves.toBe(true);
   });
@@ -28,23 +28,9 @@ describe("UserRepository", () => {
     await expect(repo.isAllowed(1n)).resolves.toBe(false);
   });
 
-  it("isAdmin returns the stored isAdmin flag", async () => {
-    const db = createMockDb();
-    db.user.findUnique.mockResolvedValue({ id: 1n, isAdmin: true });
-    const repo = new UserRepository(db as any);
-    await expect(repo.isAdmin(1n)).resolves.toBe(true);
-  });
-
-  it("isAdmin returns false for a user that does not exist", async () => {
-    const db = createMockDb();
-    db.user.findUnique.mockResolvedValue(null);
-    const repo = new UserRepository(db as any);
-    await expect(repo.isAdmin(1n)).resolves.toBe(false);
-  });
-
   it("add upserts a new admin user recording who added them", async () => {
     const db = createMockDb();
-    db.user.upsert.mockResolvedValue({ id: 2n, isAdmin: true });
+    db.user.upsert.mockResolvedValue({ id: 2n });
     const repo = new UserRepository(db as any);
     await repo.add(2n, 1n, { username: "ali", firstName: "Ali", lastName: "Valiyev" });
     expect(db.user.upsert).toHaveBeenCalledWith(
@@ -53,7 +39,6 @@ describe("UserRepository", () => {
         create: expect.objectContaining({
           id: 2n,
           addedById: 1n,
-          isAdmin: true,
           username: "ali",
           firstName: "Ali",
           lastName: "Valiyev",
@@ -86,8 +71,8 @@ describe("UserRepository", () => {
     expect(db.user.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 9n },
-        update: { isAdmin: true },
-        create: expect.objectContaining({ id: 9n, isAdmin: true, addedById: null }),
+        update: {},
+        create: expect.objectContaining({ id: 9n, addedById: null }),
       })
     );
   });

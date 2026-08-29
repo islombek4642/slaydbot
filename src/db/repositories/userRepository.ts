@@ -5,7 +5,6 @@ export interface UserRecord {
   username: string | null;
   firstName: string | null;
   lastName: string | null;
-  isAdmin: boolean;
   addedById: bigint | null;
   createdAt: Date;
 }
@@ -28,11 +27,6 @@ export class UserRepository {
     return user !== null;
   }
 
-  async isAdmin(id: bigint): Promise<boolean> {
-    const user = await this.findById(id);
-    return user?.isAdmin ?? false;
-  }
-
   async add(id: bigint, addedById: bigint | null, profile: UserProfile = {}): Promise<UserRecord> {
     return this.db.user.upsert({
       where: { id },
@@ -43,7 +37,6 @@ export class UserRepository {
         username: profile.username,
         firstName: profile.firstName,
         lastName: profile.lastName,
-        isAdmin: true,
       },
     });
   }
@@ -66,8 +59,8 @@ export class UserRepository {
   async ensureSuperAdmin(id: bigint): Promise<void> {
     await this.db.user.upsert({
       where: { id },
-      update: { isAdmin: true },
-      create: { id, isAdmin: true, addedById: null },
+      update: {},
+      create: { id, addedById: null },
     });
   }
 }

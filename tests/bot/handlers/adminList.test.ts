@@ -5,9 +5,9 @@ import { formatAdminCard } from "../../../src/bot/formatAdminCard";
 
 const SUPER_ADMIN_ID = 1n;
 
-const superRow = { id: 1n, firstName: "Super", username: "boss", isAdmin: true, addedById: null, createdAt: new Date() };
-const rowA = { id: 100n, firstName: "Ali", username: "ali", isAdmin: true, addedById: 1n, createdAt: new Date() };
-const rowB = { id: 200n, firstName: "Vali", username: null, isAdmin: true, addedById: 1n, createdAt: new Date() };
+const superRow = { id: 1n, firstName: "Super", username: "boss", addedById: null, createdAt: new Date() };
+const rowA = { id: 100n, firstName: "Ali", username: "ali", addedById: 1n, createdAt: new Date() };
+const rowB = { id: 200n, firstName: "Vali", username: null, addedById: 1n, createdAt: new Date() };
 
 function createCtx(overrides: Record<string, unknown> = {}) {
   return {
