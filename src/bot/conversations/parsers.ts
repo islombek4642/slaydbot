@@ -25,6 +25,18 @@ export function parseThemeText(text: string): ThemeName | undefined {
   return THEME_NAMES.find((themeName) => THEME_LABELS[themeName] === text);
 }
 
+export function formatSlideCount(slideCount: number): string {
+  return slideCount === SLIDE_COUNT_AUTO ? t("wizard.slideCountAuto") : String(slideCount);
+}
+
+export function formatLanguage(code: PresentationLanguageCode): string {
+  return PRESENTATION_LANGUAGES.find((lang) => lang.code === code)!.label;
+}
+
+export function formatTheme(themeName: ThemeName): string {
+  return THEME_LABELS[themeName];
+}
+
 export function parseTelegramId(text: string): bigint {
   const trimmed = text.trim();
   if (!/^\d+$/.test(trimmed)) {

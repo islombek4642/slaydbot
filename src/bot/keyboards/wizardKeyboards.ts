@@ -33,3 +33,7 @@ export function buildThemeKeyboard(): Keyboard {
   keyboard.text(t("wizard.cancel"));
   return keyboard.resized();
 }
+
+export function buildConfirmKeyboard(): Keyboard {
+  return new Keyboard().text(t("wizard.confirm.yes")).row().text(t("wizard.cancel")).resized();
+}

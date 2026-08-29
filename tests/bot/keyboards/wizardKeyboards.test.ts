@@ -3,6 +3,7 @@ import {
   buildSlideCountKeyboard,
   buildLanguageKeyboard,
   buildThemeKeyboard,
+  buildConfirmKeyboard,
   buildCancelKeyboard,
 } from "../../../src/bot/keyboards/wizardKeyboards";
 
@@ -25,5 +26,10 @@ describe("wizard keyboards", () => {
   it("builds a single cancel button", () => {
     const texts = buildCancelKeyboard().keyboard.flat().map((b: any) => b.text);
     expect(texts).toEqual(["❌ Bekor qilish"]);
+  });
+
+  it("builds a confirm button and a cancel button, in order", () => {
+    const texts = buildConfirmKeyboard().keyboard.flat().map((b: any) => b.text);
+    expect(texts).toEqual(["✅ Tasdiqlash", "❌ Bekor qilish"]);
   });
 });

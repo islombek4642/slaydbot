@@ -27,6 +27,8 @@
   "wizard.slideCountAuto": "🤖 AI tanlasin",
   "wizard.askLanguage": "Taqdimot tilini tanlang:",
   "wizard.askTheme": "Dizayn uslubini tanlang:",
+  "wizard.confirm.summary": "Quyidagi ma'lumotlar bilan taqdimot yaratilsinmi?\n\nMavzu: {{topic}}\nSlaydlar soni: {{slideCount}}\nTil: {{language}}\nDizayn: {{theme}}",
+  "wizard.confirm.yes": "✅ Tasdiqlash",
   "wizard.generating": "Tayyorlanmoqda, biroz kuting...",
   "wizard.cancel": "❌ Bekor qilish",
   "wizard.cancelled": "Bekor qilindi.",

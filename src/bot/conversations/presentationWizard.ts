@@ -6,10 +6,18 @@ import {
   buildSlideCountKeyboard,
   buildLanguageKeyboard,
   buildThemeKeyboard,
+  buildConfirmKeyboard,
   buildCancelKeyboard,
 } from "../keyboards/wizardKeyboards";
 import { buildMainMenuKeyboard } from "../keyboards/mainMenu";
-import { parseSlideCountText, parseLanguageText, parseThemeText } from "./parsers";
+import {
+  parseSlideCountText,
+  parseLanguageText,
+  parseThemeText,
+  formatSlideCount,
+  formatLanguage,
+  formatTheme,
+} from "./parsers";
 import { isSuperAdmin } from "../superAdmin";
 import type { PresentationService } from "../../services/presentationService";
 
@@ -90,6 +98,25 @@ export function createPresentationWizard(presentationService: PresentationServic
       return;
     }
     const themeName = themeSelection.value;
+
+    const summary = t("wizard.confirm.summary", {
+      topic,
+      slideCount: formatSlideCount(slideCount),
+      language: formatLanguage(language),
+      theme: formatTheme(themeName),
+    });
+    await ctx.reply(summary, { reply_markup: buildConfirmKeyboard() });
+    const confirmSelection = await waitForSelection(
+      conversation,
+      ctx,
+      summary,
+      buildConfirmKeyboard(),
+      (text) => (text === t("wizard.confirm.yes") ? true : undefined)
+    );
+    if (confirmSelection.cancelled) {
+      await ctx.reply(t("wizard.cancelled"), { reply_markup: mainMenuFor(ctx) });
+      return;
+    }
 
     await ctx.reply(t("wizard.generating"));
 

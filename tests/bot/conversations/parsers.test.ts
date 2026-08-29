@@ -3,6 +3,9 @@ import {
   parseSlideCountText,
   parseLanguageText,
   parseThemeText,
+  formatSlideCount,
+  formatLanguage,
+  formatTheme,
   parseTelegramId,
 } from "../../../src/bot/conversations/parsers";
 import { SLIDE_COUNT_AUTO } from "../../../src/config/constants";
@@ -45,6 +48,30 @@ describe("parseThemeText", () => {
 
   it("returns undefined for an unknown label", () => {
     expect(parseThemeText("Neon")).toBeUndefined();
+  });
+});
+
+describe("formatSlideCount", () => {
+  it("formats a concrete count as its number", () => {
+    expect(formatSlideCount(10)).toBe("10");
+  });
+
+  it("formats the auto sentinel as the AI-decides label", () => {
+    expect(formatSlideCount(SLIDE_COUNT_AUTO)).toBe("🤖 AI tanlasin");
+  });
+});
+
+describe("formatLanguage", () => {
+  it("formats a language code as its label", () => {
+    expect(formatLanguage("uz")).toBe("O'zbek");
+    expect(formatLanguage("en")).toBe("Ingliz");
+  });
+});
+
+describe("formatTheme", () => {
+  it("formats a theme name as its label", () => {
+    expect(formatTheme("corporate")).toBe("Corporate");
+    expect(formatTheme("dark")).toBe("Dark");
   });
 });
 
