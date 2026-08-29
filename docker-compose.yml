@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: slaydbot_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-slaydbot}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  bot:
+    build: .
+    container_name: slaydbot_bot
+    restart: on-failure:5
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-slaydbot}
+      - VIRTUAL_HOST=${WEBHOOK_DOMAIN}
+      - VIRTUAL_PORT=3000
+      - LETSENCRYPT_HOST=${WEBHOOK_DOMAIN}
+      - LETSENCRYPT_EMAIL=${SSL_EMAIL}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    expose:
+      - "3000"
+    networks:
+      - backend
+      - proxy_network
+
+networks:
+  backend:
+  proxy_network:
+    external: true
+
+volumes:
+  postgres_data:
