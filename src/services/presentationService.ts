@@ -20,6 +20,7 @@ export interface GeneratePresentationInput {
 
 export interface GeneratePresentationResult {
   success: boolean;
+  requestId: string;
   buffer?: Buffer;
   errorMessage?: string;
 }
@@ -81,14 +82,14 @@ export class PresentationService {
       const buffer = await builder.toBuffer();
       await this.presentationRepository.markSuccess(recordId);
       this.logger.info({ requestId, recordId }, "Presentation generation succeeded");
-      return { success: true, buffer };
+      return { success: true, requestId, buffer };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (recordId) {
         await this.presentationRepository.markFailed(recordId, message);
       }
       this.logger.error({ requestId, recordId, error: message }, "Presentation generation failed");
-      return { success: false, errorMessage: message };
+      return { success: false, requestId, errorMessage: message };
     }
   }
 }

@@ -26,5 +26,5 @@
   "wizard.cancel": "❌ Bekor qilish",
   "wizard.cancelled": "Bekor qilindi.",
   "wizard.success": "Taqdimot tayyor!",
-  "wizard.error": "Taqdimot yaratishda xatolik yuz berdi. Qaytadan urinib ko'ring."
+  "wizard.error": "Taqdimot yaratishda xatolik yuz berdi. Qaytadan urinib ko'ring. (ID: {{requestId}})"
 }

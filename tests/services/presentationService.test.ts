@@ -36,6 +36,7 @@ describe("PresentationService.generate", () => {
     });
 
     expect(result.success).toBe(true);
+    expect(result.requestId).toEqual(expect.any(String));
     expect(result.buffer).toBeInstanceOf(Buffer);
     expect(repo.markSuccess).toHaveBeenCalledWith("pres_1");
     expect(repo.markFailed).not.toHaveBeenCalled();
@@ -55,6 +56,7 @@ describe("PresentationService.generate", () => {
     });
 
     expect(result.success).toBe(false);
+    expect(result.requestId).toEqual(expect.any(String));
     expect(result.errorMessage).toMatch(/banned pattern/);
     expect(repo.markFailed).toHaveBeenCalledWith("pres_1", expect.stringContaining("banned pattern"));
   });
@@ -73,6 +75,7 @@ describe("PresentationService.generate", () => {
     });
 
     expect(result.success).toBe(false);
+    expect(result.requestId).toEqual(expect.any(String));
     expect(result.errorMessage).toContain("bad code");
   });
 
@@ -90,7 +93,11 @@ describe("PresentationService.generate", () => {
       themeName: "corporate",
     });
 
-    expect(result).toEqual({ success: false, errorMessage: "db down" });
+    expect(result).toEqual({
+      success: false,
+      requestId: expect.any(String),
+      errorMessage: "db down",
+    });
     expect(repo.markFailed).not.toHaveBeenCalled();
   });
 

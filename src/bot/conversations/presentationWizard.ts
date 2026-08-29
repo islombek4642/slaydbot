@@ -53,7 +53,7 @@ export function createPresentationWizard(presentationService: PresentationServic
         caption: t("wizard.success"),
       });
     } else {
-      await ctx.reply(t("wizard.error"));
+      await ctx.reply(t("wizard.error", { requestId: result.requestId.slice(0, 8) }));
     }
   };
 }
