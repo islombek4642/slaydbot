@@ -4,9 +4,19 @@ import type { MyContext } from "../context";
 import { t } from "../../i18n/t";
 import { parseTelegramId } from "./parsers";
 import type { UserRepository } from "../../db/repositories/userRepository";
+import { formatUserList } from "../formatUserList";
 
 export function createAdminRemoveUserConversation(userRepository: UserRepository) {
   return async function adminRemoveUser(conversation: Conversation<MyContext>, ctx: Context): Promise<void> {
+    // Fetch and display the user list
+    const users = await conversation.external(() => userRepository.listAll());
+    if (users.length === 0) {
+      await ctx.reply(t("admin.listUsers.empty"));
+      return;
+    }
+    await ctx.reply(formatUserList(users));
+
+    // Ask for the user ID to remove
     await ctx.reply(t("admin.removeUser.askId"));
     const idCtx = await conversation.waitFor("message:text");
     let targetId: bigint;
