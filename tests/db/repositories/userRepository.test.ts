@@ -55,6 +55,16 @@ describe("UserRepository", () => {
     );
   });
 
+  it("updateProfile updates the user's username and first name", async () => {
+    const db = createMockDb();
+    const repo = new UserRepository(db as any);
+    await repo.updateProfile(3n, { username: "vali", firstName: "Vali" });
+    expect(db.user.update).toHaveBeenCalledWith({
+      where: { id: 3n },
+      data: { username: "vali", firstName: "Vali" },
+    });
+  });
+
   it("remove deletes the user by id", async () => {
     const db = createMockDb();
     const repo = new UserRepository(db as any);

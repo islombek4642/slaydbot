@@ -45,6 +45,13 @@ export class UserRepository {
     });
   }
 
+  async updateProfile(id: bigint, profile: UserProfile): Promise<void> {
+    await this.db.user.update({
+      where: { id },
+      data: { username: profile.username, firstName: profile.firstName },
+    });
+  }
+
   async remove(id: bigint): Promise<void> {
     await this.db.user.delete({ where: { id } });
   }
