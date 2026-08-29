@@ -13,5 +13,12 @@ export type PresentationLanguageCode = (typeof PRESENTATION_LANGUAGES)[number]["
 export const THEME_NAMES = ["corporate", "creative", "minimal", "dark"] as const;
 export type ThemeName = (typeof THEME_NAMES)[number];
 
+export const THEME_LABELS: Record<ThemeName, string> = {
+  corporate: "Corporate",
+  creative: "Creative",
+  minimal: "Minimal",
+  dark: "Dark",
+};
+
 export const SANDBOX_TIMEOUT_MS = 5000;
 export const SANDBOX_MEMORY_LIMIT_MB = 128;

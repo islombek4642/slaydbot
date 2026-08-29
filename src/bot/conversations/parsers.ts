@@ -1,9 +1,28 @@
-export function parseCallbackValue(data: string, expectedPrefix: string): string {
-  const [prefix, value] = data.split(":");
-  if (prefix !== expectedPrefix || value === undefined) {
-    throw new Error(`Invalid callback data "${data}" for prefix "${expectedPrefix}"`);
+import {
+  SLIDE_COUNT_OPTIONS,
+  SLIDE_COUNT_AUTO,
+  PRESENTATION_LANGUAGES,
+  THEME_NAMES,
+  THEME_LABELS,
+  type PresentationLanguageCode,
+  type ThemeName,
+} from "../../config/constants";
+import { t } from "../../i18n/t";
+
+export function parseSlideCountText(text: string): number | undefined {
+  if (text === t("wizard.slideCountAuto")) {
+    return SLIDE_COUNT_AUTO;
   }
-  return value;
+  const value = Number(text);
+  return (SLIDE_COUNT_OPTIONS as readonly number[]).includes(value) ? value : undefined;
+}
+
+export function parseLanguageText(text: string): PresentationLanguageCode | undefined {
+  return PRESENTATION_LANGUAGES.find((lang) => lang.label === text)?.code;
+}
+
+export function parseThemeText(text: string): ThemeName | undefined {
+  return THEME_NAMES.find((themeName) => THEME_LABELS[themeName] === text);
 }
 
 export function parseTelegramId(text: string): bigint {

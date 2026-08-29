@@ -1,4 +1,4 @@
-import { InputFile, type Context } from "grammy";
+import { InputFile, type Context, type Keyboard } from "grammy";
 import type { Conversation } from "@grammyjs/conversations";
 import type { MyContext } from "../context";
 import { t } from "../../i18n/t";
@@ -8,37 +8,88 @@ import {
   buildThemeKeyboard,
   buildCancelKeyboard,
 } from "../keyboards/wizardKeyboards";
-import { parseCallbackValue } from "./parsers";
+import { buildMainMenuKeyboard } from "../keyboards/mainMenu";
+import { parseSlideCountText, parseLanguageText, parseThemeText } from "./parsers";
+import { isSuperAdmin } from "../superAdmin";
 import type { PresentationService } from "../../services/presentationService";
-import type { ThemeName, PresentationLanguageCode } from "../../config/constants";
-import { SLIDE_COUNT_AUTO } from "../../config/constants";
 
-export function createPresentationWizard(presentationService: PresentationService) {
+type Selection<T> = { cancelled: true } | { cancelled: false; value: T };
+
+async function waitForSelection<T>(
+  conversation: Conversation<MyContext>,
+  ctx: Context,
+  prompt: string,
+  keyboard: Keyboard,
+  parse: (text: string) => T | undefined
+): Promise<Selection<T>> {
+  for (;;) {
+    const msgCtx = await conversation.waitFor("message:text");
+    const text = msgCtx.message.text;
+    if (text === t("wizard.cancel")) {
+      return { cancelled: true };
+    }
+    const value = parse(text);
+    if (value !== undefined) {
+      return { cancelled: false, value };
+    }
+    await ctx.reply(prompt, { reply_markup: keyboard });
+  }
+}
+
+export function createPresentationWizard(presentationService: PresentationService, superAdminId: bigint) {
   return async function presentationWizard(conversation: Conversation<MyContext>, ctx: Context): Promise<void> {
+    const mainMenuFor = (wizardCtx: Context): Keyboard =>
+      buildMainMenuKeyboard(isSuperAdmin(BigInt(wizardCtx.from!.id), superAdminId));
+
     await ctx.reply(t("wizard.askTopic"), { reply_markup: buildCancelKeyboard() });
-    const topicCtx = await conversation.waitFor(["message:text", "callback_query:data"]);
-    if (topicCtx.has("callback_query:data")) {
-      await topicCtx.answerCallbackQuery();
-      await topicCtx.reply(t("wizard.cancelled"));
+    const topicCtx = await conversation.waitFor("message:text");
+    if (topicCtx.message.text === t("wizard.cancel")) {
+      await topicCtx.reply(t("wizard.cancelled"), { reply_markup: mainMenuFor(topicCtx) });
       return;
     }
     const topic = topicCtx.message.text;
 
     await ctx.reply(t("wizard.askSlideCount"), { reply_markup: buildSlideCountKeyboard() });
-    const slideCountCtx = await conversation.waitFor("callback_query:data");
-    await slideCountCtx.answerCallbackQuery();
-    const slideCountValue = parseCallbackValue(slideCountCtx.callbackQuery.data, "slideCount");
-    const slideCount = slideCountValue === "auto" ? SLIDE_COUNT_AUTO : Number(slideCountValue);
+    const slideCountSelection = await waitForSelection(
+      conversation,
+      ctx,
+      t("wizard.askSlideCount"),
+      buildSlideCountKeyboard(),
+      parseSlideCountText
+    );
+    if (slideCountSelection.cancelled) {
+      await ctx.reply(t("wizard.cancelled"), { reply_markup: mainMenuFor(ctx) });
+      return;
+    }
+    const slideCount = slideCountSelection.value;
 
     await ctx.reply(t("wizard.askLanguage"), { reply_markup: buildLanguageKeyboard() });
-    const languageCtx = await conversation.waitFor("callback_query:data");
-    await languageCtx.answerCallbackQuery();
-    const language = parseCallbackValue(languageCtx.callbackQuery.data, "language") as PresentationLanguageCode;
+    const languageSelection = await waitForSelection(
+      conversation,
+      ctx,
+      t("wizard.askLanguage"),
+      buildLanguageKeyboard(),
+      parseLanguageText
+    );
+    if (languageSelection.cancelled) {
+      await ctx.reply(t("wizard.cancelled"), { reply_markup: mainMenuFor(ctx) });
+      return;
+    }
+    const language = languageSelection.value;
 
     await ctx.reply(t("wizard.askTheme"), { reply_markup: buildThemeKeyboard() });
-    const themeCtx = await conversation.waitFor("callback_query:data");
-    await themeCtx.answerCallbackQuery();
-    const themeName = parseCallbackValue(themeCtx.callbackQuery.data, "theme") as ThemeName;
+    const themeSelection = await waitForSelection(
+      conversation,
+      ctx,
+      t("wizard.askTheme"),
+      buildThemeKeyboard(),
+      parseThemeText
+    );
+    if (themeSelection.cancelled) {
+      await ctx.reply(t("wizard.cancelled"), { reply_markup: mainMenuFor(ctx) });
+      return;
+    }
+    const themeName = themeSelection.value;
 
     await ctx.reply(t("wizard.generating"));
 
@@ -51,9 +102,12 @@ export function createPresentationWizard(presentationService: PresentationServic
       const safeFilename = `${topic.replace(/[\r\n]+/g, " ").trim().slice(0, 60) || "taqdimot"}.pptx`;
       await ctx.replyWithDocument(new InputFile(result.buffer, safeFilename), {
         caption: t("wizard.success"),
+        reply_markup: mainMenuFor(ctx),
       });
     } else {
-      await ctx.reply(t("wizard.error", { requestId: result.requestId.slice(0, 8) }));
+      await ctx.reply(t("wizard.error", { requestId: result.requestId.slice(0, 8) }), {
+        reply_markup: mainMenuFor(ctx),
+      });
     }
   };
 }

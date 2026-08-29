@@ -1,39 +1,35 @@
-import { InlineKeyboard } from "grammy";
-import { SLIDE_COUNT_OPTIONS, PRESENTATION_LANGUAGES, THEME_NAMES, type ThemeName } from "../../config/constants";
+import { Keyboard } from "grammy";
+import { SLIDE_COUNT_OPTIONS, PRESENTATION_LANGUAGES, THEME_NAMES, THEME_LABELS } from "../../config/constants";
 import { t } from "../../i18n/t";
 
-export function buildSlideCountKeyboard(): InlineKeyboard {
-  const keyboard = new InlineKeyboard();
+export function buildCancelKeyboard(): Keyboard {
+  return new Keyboard().text(t("wizard.cancel")).resized();
+}
+
+export function buildSlideCountKeyboard(): Keyboard {
+  const keyboard = new Keyboard();
   for (const count of SLIDE_COUNT_OPTIONS) {
-    keyboard.text(String(count), `slideCount:${count}`);
+    keyboard.text(String(count));
   }
-  keyboard.row().text(t("wizard.slideCountAuto"), "slideCount:auto");
-  return keyboard;
+  keyboard.row().text(t("wizard.slideCountAuto")).row();
+  keyboard.text(t("wizard.cancel"));
+  return keyboard.resized();
 }
 
-export function buildLanguageKeyboard(): InlineKeyboard {
-  const keyboard = new InlineKeyboard();
+export function buildLanguageKeyboard(): Keyboard {
+  const keyboard = new Keyboard();
   for (const lang of PRESENTATION_LANGUAGES) {
-    keyboard.text(lang.label, `language:${lang.code}`).row();
+    keyboard.text(lang.label).row();
   }
-  return keyboard;
+  keyboard.text(t("wizard.cancel"));
+  return keyboard.resized();
 }
 
-const THEME_LABELS: Record<ThemeName, string> = {
-  corporate: "Corporate",
-  creative: "Creative",
-  minimal: "Minimal",
-  dark: "Dark",
-};
-
-export function buildThemeKeyboard(): InlineKeyboard {
-  const keyboard = new InlineKeyboard();
+export function buildThemeKeyboard(): Keyboard {
+  const keyboard = new Keyboard();
   for (const themeName of THEME_NAMES) {
-    keyboard.text(THEME_LABELS[themeName], `theme:${themeName}`).row();
+    keyboard.text(THEME_LABELS[themeName]).row();
   }
-  return keyboard;
-}
-
-export function buildCancelKeyboard(): InlineKeyboard {
-  return new InlineKeyboard().text(t("wizard.cancel"), "cancel");
+  keyboard.text(t("wizard.cancel"));
+  return keyboard.resized();
 }

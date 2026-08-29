@@ -27,7 +27,9 @@ export function createBot(deps: BotDependencies): Bot<MyContext> {
   // @grammyjs/conversations v2 manages its own state internally (in-memory by
   // default); it does not require grammY's core `session()` middleware.
   bot.use(conversations());
-  bot.use(createConversation(createPresentationWizard(deps.presentationService), "presentationWizard"));
+  bot.use(
+    createConversation(createPresentationWizard(deps.presentationService, deps.superAdminId), "presentationWizard")
+  );
   bot.use(createConversation(createAdminAddUserConversation(deps.userRepository), "adminAddUser"));
 
   const accessControl = createAccessControlMiddleware(deps.userRepository);

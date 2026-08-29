@@ -1,13 +1,50 @@
 import { describe, it, expect } from "vitest";
-import { parseCallbackValue, parseTelegramId } from "../../../src/bot/conversations/parsers";
+import {
+  parseSlideCountText,
+  parseLanguageText,
+  parseThemeText,
+  parseTelegramId,
+} from "../../../src/bot/conversations/parsers";
+import { SLIDE_COUNT_AUTO } from "../../../src/config/constants";
 
-describe("parseCallbackValue", () => {
-  it("extracts the value after the prefix", () => {
-    expect(parseCallbackValue("slideCount:10", "slideCount")).toBe("10");
+describe("parseSlideCountText", () => {
+  it("parses a known slide count option", () => {
+    expect(parseSlideCountText("10")).toBe(10);
   });
 
-  it("throws when the prefix does not match", () => {
-    expect(() => parseCallbackValue("language:uz", "slideCount")).toThrow(/Invalid callback data/);
+  it("parses the AI-decides label into the auto sentinel", () => {
+    expect(parseSlideCountText("🤖 AI tanlasin")).toBe(SLIDE_COUNT_AUTO);
+  });
+
+  it("returns undefined for a number that is not one of the options", () => {
+    expect(parseSlideCountText("7")).toBeUndefined();
+  });
+
+  it("returns undefined for non-numeric text", () => {
+    expect(parseSlideCountText("abc")).toBeUndefined();
+  });
+});
+
+describe("parseLanguageText", () => {
+  it("maps a known language label to its code", () => {
+    expect(parseLanguageText("O'zbek")).toBe("uz");
+    expect(parseLanguageText("Rus")).toBe("ru");
+    expect(parseLanguageText("Ingliz")).toBe("en");
+  });
+
+  it("returns undefined for an unknown label", () => {
+    expect(parseLanguageText("French")).toBeUndefined();
+  });
+});
+
+describe("parseThemeText", () => {
+  it("maps a known theme label to its name", () => {
+    expect(parseThemeText("Corporate")).toBe("corporate");
+    expect(parseThemeText("Dark")).toBe("dark");
+  });
+
+  it("returns undefined for an unknown label", () => {
+    expect(parseThemeText("Neon")).toBeUndefined();
   });
 });
 

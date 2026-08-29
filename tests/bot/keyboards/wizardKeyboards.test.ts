@@ -7,23 +7,23 @@ import {
 } from "../../../src/bot/keyboards/wizardKeyboards";
 
 describe("wizard keyboards", () => {
-  it("builds a button for every slide count option plus an AI-decides option", () => {
-    const data = buildSlideCountKeyboard().inline_keyboard.flat().map((b: any) => b.callback_data);
-    expect(data).toEqual(["slideCount:5", "slideCount:10", "slideCount:15", "slideCount:20", "slideCount:auto"]);
+  it("builds a button for every slide count option plus an AI-decides option, and a cancel button", () => {
+    const texts = buildSlideCountKeyboard().keyboard.flat().map((b: any) => b.text);
+    expect(texts).toEqual(["5", "10", "15", "20", "🤖 AI tanlasin", "❌ Bekor qilish"]);
   });
 
-  it("builds a button for every language", () => {
-    const data = buildLanguageKeyboard().inline_keyboard.flat().map((b: any) => b.callback_data);
-    expect(data).toEqual(["language:uz", "language:ru", "language:en"]);
+  it("builds a button for every language, and a cancel button", () => {
+    const texts = buildLanguageKeyboard().keyboard.flat().map((b: any) => b.text);
+    expect(texts).toEqual(["O'zbek", "Rus", "Ingliz", "❌ Bekor qilish"]);
   });
 
-  it("builds a button for every theme", () => {
-    const data = buildThemeKeyboard().inline_keyboard.flat().map((b: any) => b.callback_data);
-    expect(data).toEqual(["theme:corporate", "theme:creative", "theme:minimal", "theme:dark"]);
+  it("builds a button for every theme, and a cancel button", () => {
+    const texts = buildThemeKeyboard().keyboard.flat().map((b: any) => b.text);
+    expect(texts).toEqual(["Corporate", "Creative", "Minimal", "Dark", "❌ Bekor qilish"]);
   });
 
   it("builds a single cancel button", () => {
-    const data = buildCancelKeyboard().inline_keyboard.flat().map((b: any) => b.callback_data);
-    expect(data).toEqual(["cancel"]);
+    const texts = buildCancelKeyboard().keyboard.flat().map((b: any) => b.text);
+    expect(texts).toEqual(["❌ Bekor qilish"]);
   });
 });
