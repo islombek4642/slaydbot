@@ -14,7 +14,7 @@ cd "$PROJECT_DIR"
 
 echo -e "${GREEN}=== Slaydbot Deployment ===${NC}"
 
-echo -e "${YELLOW}[1/6] Pre-flight checks...${NC}"
+echo -e "${YELLOW}[1/7] Pre-flight checks...${NC}"
 if ! command -v docker &> /dev/null; then
   echo -e "${RED}Docker not installed. Installing...${NC}"
   curl -fsSL https://get.docker.com | sudo sh
@@ -35,7 +35,7 @@ if ! grep -q '^WEBHOOK_SECRET=.\+' .env; then
   echo -e "${GREEN}WEBHOOK_SECRET was empty - generated one automatically.${NC}"
 fi
 
-echo -e "${YELLOW}[2/6] Backing up database...${NC}"
+echo -e "${YELLOW}[2/7] Backing up database...${NC}"
 mkdir -p backups
 if sudo docker ps --format '{{.Names}}' | grep -q 'slaydbot_db'; then
   BACKUP_NAME="backup_$(date +%Y%m%d_%H%M%S)"
@@ -49,25 +49,36 @@ else
   echo -e "${YELLOW}Backup skipped (container not running)${NC}"
 fi
 
-echo -e "${YELLOW}[3/6] Pulling latest code...${NC}"
+echo -e "${YELLOW}[3/7] Pulling latest code...${NC}"
 git stash
 git pull origin master
 git stash pop 2>/dev/null || true
 
-echo -e "${YELLOW}[4/6] Ensuring proxy_network exists...${NC}"
+echo -e "${YELLOW}[4/7] Ensuring proxy_network exists...${NC}"
 if ! sudo docker network inspect proxy_network &>/dev/null; then
   sudo docker network create proxy_network
 fi
 
-echo -e "${YELLOW}[5/6] Building and starting containers...${NC}"
+echo -e "${YELLOW}[5/7] Building images...${NC}"
 sudo docker compose down
-sudo docker compose up -d --build
+sudo docker compose build
+
+# Migrations must run BEFORE the bot service starts: the bot's own startup
+# (main() -> ensureSuperAdmin()) queries the User table immediately, and on
+# a fresh/un-migrated database that query fails, the container crashes,
+# restart:on-failure retries a few times then gives up - at which point
+# "docker compose exec bot ..." can no longer reach it ("service bot is
+# not running"). Running migrations via `compose run` first (a one-off
+# container, not the long-running "bot" service) sidesteps that entirely -
+# `run` still honors db's `depends_on: condition: service_healthy`.
+echo -e "${YELLOW}[6/7] Running database migrations...${NC}"
+sudo docker compose run --rm -T bot npx prisma migrate deploy
+
+echo -e "${YELLOW}[7/7] Starting containers and checking health...${NC}"
+sudo docker compose up -d
 
 echo "Waiting for containers to initialize..."
 sleep 10
-
-echo -e "${YELLOW}[6/6] Running database migrations and health check...${NC}"
-sudo docker compose exec -T bot npx prisma migrate deploy
 
 HTTP_CODE=$(sudo docker compose exec -T bot curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/health || echo "000")
 if [[ "$HTTP_CODE" == "200" ]]; then
