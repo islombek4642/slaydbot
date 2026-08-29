@@ -20,7 +20,10 @@ async function main(): Promise<void> {
 
   await userRepository.ensureSuperAdmin(env.SUPER_ADMIN_ID);
 
-  const aiClient = new AiClient(env.ANTHROPIC_API_KEY, env.CLAUDE_MODEL);
+  const aiClient = env.ANTHROPIC_API_KEY ? new AiClient(env.ANTHROPIC_API_KEY, env.CLAUDE_MODEL) : null;
+  if (!aiClient) {
+    logger.warn("ANTHROPIC_API_KEY is not set; AI presentation generation is disabled until it is configured");
+  }
   const presentationService = new PresentationService(
     aiClient,
     presentationRepository,

@@ -27,7 +27,7 @@ export interface GeneratePresentationResult {
 
 export class PresentationService {
   constructor(
-    private readonly aiClient: AiClient,
+    private readonly aiClient: AiClient | null,
     private readonly presentationRepository: PresentationRepository,
     private readonly iconCache: IconCache = new IconCache(),
     private readonly logger: Logger = createLogger()
@@ -57,6 +57,10 @@ export class PresentationService {
         theme: input.themeName,
       });
       recordId = record.id;
+
+      if (!this.aiClient) {
+        throw new Error("ANTHROPIC_API_KEY is not configured; AI-based presentation generation is unavailable");
+      }
 
       const code = await this.aiClient.generateSlideCode({
         topic: input.topic,

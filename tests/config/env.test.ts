@@ -29,4 +29,30 @@ describe("loadEnv", () => {
     expect(env.CLAUDE_MODEL).toBe("claude-x");
     expect(env.PORT).toBe(8080);
   });
+
+  it("succeeds when ANTHROPIC_API_KEY is omitted, leaving it undefined", () => {
+    const { ANTHROPIC_API_KEY, ...rest } = validEnv;
+    const env = loadEnv(rest);
+    expect(env.ANTHROPIC_API_KEY).toBeUndefined();
+  });
+
+  it("throws when DATABASE_URL is missing", () => {
+    const { DATABASE_URL, ...rest } = validEnv;
+    expect(() => loadEnv(rest)).toThrow(/DATABASE_URL/);
+  });
+
+  it("throws when WEBHOOK_DOMAIN is missing", () => {
+    const { WEBHOOK_DOMAIN, ...rest } = validEnv;
+    expect(() => loadEnv(rest)).toThrow(/WEBHOOK_DOMAIN/);
+  });
+
+  it("throws when WEBHOOK_SECRET is missing", () => {
+    const { WEBHOOK_SECRET, ...rest } = validEnv;
+    expect(() => loadEnv(rest)).toThrow(/WEBHOOK_SECRET/);
+  });
+
+  it("throws when SUPER_ADMIN_ID is missing", () => {
+    const { SUPER_ADMIN_ID, ...rest } = validEnv;
+    expect(() => loadEnv(rest)).toThrow(/SUPER_ADMIN_ID/);
+  });
 });

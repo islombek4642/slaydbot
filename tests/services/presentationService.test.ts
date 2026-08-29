@@ -140,6 +140,26 @@ describe("PresentationService.generate", () => {
     expect(startCall![0].requestId).toBe(successCall![0].requestId);
   });
 
+  it("fails gracefully and marks the record failed when aiClient is null (no API key configured)", async () => {
+    const repo = createMockPresentationRepository();
+    const service = new PresentationService(null, repo, createMockIconCache());
+
+    const result = await service.generate({
+      userId: 1n,
+      topic: "Test",
+      slideCount: 1,
+      language: "o'zbek",
+      themeName: "corporate",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      requestId: expect.any(String),
+      errorMessage: expect.stringContaining("ANTHROPIC_API_KEY"),
+    });
+    expect(repo.markFailed).toHaveBeenCalledWith("pres_1", expect.stringContaining("ANTHROPIC_API_KEY"));
+  });
+
   it("logs a requestId at start and error with structured fields when generation fails", async () => {
     const aiClient = createMockAiClient("throw new Error('bad code');");
     const repo = createMockPresentationRepository();

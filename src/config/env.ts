@@ -4,7 +4,7 @@ const envSchema = z.object({
   BOT_TOKEN: z.string().min(1, "BOT_TOKEN is required"),
   SUPER_ADMIN_ID: z.coerce.bigint(),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
-  ANTHROPIC_API_KEY: z.string().min(1, "ANTHROPIC_API_KEY is required"),
+  ANTHROPIC_API_KEY: z.string().min(1, "ANTHROPIC_API_KEY is required").optional(),
   CLAUDE_MODEL: z.string().default("claude-opus-4-5"),
   WEBHOOK_DOMAIN: z.string().min(1, "WEBHOOK_DOMAIN is required"),
   WEBHOOK_SECRET: z.string().min(1, "WEBHOOK_SECRET is required"),
