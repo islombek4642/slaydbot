@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_AI_MODEL } from "./constants";
 
 const envSchema = z.object({
   BOT_TOKEN: z.string().min(1, "BOT_TOKEN is required"),
@@ -13,7 +14,10 @@ const envSchema = z.object({
     (val) => (val === "" ? undefined : val),
     z.string().min(1, "ANTHROPIC_API_KEY is required").optional()
   ),
-  CLAUDE_MODEL: z.string().default("claude-opus-4-5"),
+  // Only the fallback used the first time the bot ever starts (before any
+  // model has been chosen via the admin panel) - the admin panel's choice,
+  // persisted in the Setting table, takes over after that.
+  CLAUDE_MODEL: z.string().default(DEFAULT_AI_MODEL),
   WEBHOOK_DOMAIN: z.string().min(1, "WEBHOOK_DOMAIN is required"),
   WEBHOOK_SECRET: z.string().min(1, "WEBHOOK_SECRET is required"),
   PORT: z.coerce.number().int().positive().default(3000),

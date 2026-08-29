@@ -33,6 +33,14 @@ export class PresentationService {
     private readonly logger: Logger = createLogger()
   ) {}
 
+  getModel(): string | null {
+    return this.aiClient?.getModel() ?? null;
+  }
+
+  setModel(model: string): void {
+    this.aiClient?.setModel(model);
+  }
+
   async generate(input: GeneratePresentationInput): Promise<GeneratePresentationResult> {
     const requestId = randomUUID();
     let recordId: string | undefined;

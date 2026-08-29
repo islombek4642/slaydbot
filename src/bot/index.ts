@@ -6,18 +6,21 @@ import { createAccessControlMiddleware } from "./middlewares/accessControl";
 import { createStartHandler } from "./handlers/start";
 import { createHelpHandler } from "./handlers/help";
 import { createAdminListEntryHandler, createAdminListCallbackHandler } from "./handlers/adminList";
+import { createModelEntryHandler, createModelCallbackHandler } from "./handlers/model";
 import { buildAdminMenuKeyboard } from "./keyboards/adminMenu";
 import { buildMainMenuKeyboard } from "./keyboards/mainMenu";
 import { createPresentationWizard } from "./conversations/presentationWizard";
 import { createAdminAddUserConversation } from "./conversations/adminAddUser";
 import { isSuperAdmin } from "./superAdmin";
 import type { UserRepository } from "../db/repositories/userRepository";
+import type { SettingRepository } from "../db/repositories/settingRepository";
 import type { PresentationService } from "../services/presentationService";
 
 export interface BotDependencies {
   botToken: string;
   superAdminId: bigint;
   userRepository: UserRepository;
+  settingRepository: SettingRepository;
   presentationService: PresentationService;
 }
 
@@ -64,6 +67,13 @@ export function createBot(deps: BotDependencies): Bot<MyContext> {
   bot.hears(t("admin.adminsButton"), createAdminListEntryHandler(deps.userRepository, deps.superAdminId));
 
   bot.callbackQuery(/^adminList:/, createAdminListCallbackHandler(deps.userRepository, deps.superAdminId));
+
+  bot.hears(t("admin.modelButton"), createModelEntryHandler(deps.settingRepository, deps.superAdminId));
+
+  bot.callbackQuery(
+    /^model:/,
+    createModelCallbackHandler(deps.settingRepository, deps.presentationService, deps.superAdminId)
+  );
 
   // Fallback for any text that matched none of the hears() above (e.g. a
   // stale button label left over from a previous keyboard/version, or a

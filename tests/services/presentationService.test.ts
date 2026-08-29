@@ -2,7 +2,11 @@ import { describe, it, expect, vi } from "vitest";
 import { PresentationService } from "../../src/services/presentationService";
 
 function createMockAiClient(code: string) {
-  return { generateSlideCode: vi.fn().mockResolvedValue(code) } as any;
+  return {
+    generateSlideCode: vi.fn().mockResolvedValue(code),
+    getModel: vi.fn().mockReturnValue("claude-sonnet-5"),
+    setModel: vi.fn(),
+  } as any;
 }
 
 function createMockPresentationRepository() {
@@ -187,5 +191,23 @@ describe("PresentationService.generate", () => {
       }),
       "Presentation generation failed"
     );
+  });
+});
+
+describe("PresentationService model accessors", () => {
+  it("getModel/setModel delegate to the underlying AiClient", () => {
+    const aiClient = createMockAiClient("code");
+    const service = new PresentationService(aiClient, createMockPresentationRepository(), createMockIconCache());
+
+    expect(service.getModel()).toBe("claude-sonnet-5");
+    service.setModel("claude-opus-5");
+    expect(aiClient.setModel).toHaveBeenCalledWith("claude-opus-5");
+  });
+
+  it("getModel returns null and setModel is a no-op when there is no AiClient", () => {
+    const service = new PresentationService(null, createMockPresentationRepository(), createMockIconCache());
+
+    expect(service.getModel()).toBeNull();
+    expect(() => service.setModel("claude-opus-5")).not.toThrow();
   });
 });

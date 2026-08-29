@@ -50,10 +50,20 @@ export function isTransientError(error: unknown): boolean {
 export class AiClient {
   private readonly client: Anthropic;
   private readonly delay: DelayFn;
+  private model: string;
 
-  constructor(apiKey: string, private readonly model: string, delay: DelayFn = defaultDelay) {
+  constructor(apiKey: string, model: string, delay: DelayFn = defaultDelay) {
     this.client = new Anthropic({ apiKey, maxRetries: 0 });
+    this.model = model;
     this.delay = delay;
+  }
+
+  getModel(): string {
+    return this.model;
+  }
+
+  setModel(model: string): void {
+    this.model = model;
   }
 
   async generateSlideCode(params: GenerateCodeParams): Promise<string> {

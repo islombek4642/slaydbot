@@ -16,7 +16,7 @@ describe("loadEnv", () => {
     expect(env.BOT_TOKEN).toBe("123:abc");
     expect(env.SUPER_ADMIN_ID).toBe(111111111n);
     expect(env.PORT).toBe(3000);
-    expect(env.CLAUDE_MODEL).toBe("claude-opus-4-5");
+    expect(env.CLAUDE_MODEL).toBe("claude-sonnet-5");
   });
 
   it("throws when BOT_TOKEN is missing", () => {

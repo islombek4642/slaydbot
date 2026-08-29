@@ -5,6 +5,8 @@ import { loadEnv } from "./config/env";
 import { createDbClient } from "./db/client";
 import { UserRepository } from "./db/repositories/userRepository";
 import { PresentationRepository } from "./db/repositories/presentationRepository";
+import { SettingRepository } from "./db/repositories/settingRepository";
+import { AI_MODEL_SETTING_KEY } from "./config/constants";
 import { AiClient } from "./ai/client";
 import { PresentationService } from "./services/presentationService";
 import { IconCache } from "./pptx/icons/iconCache";
@@ -18,10 +20,16 @@ async function main(): Promise<void> {
   const db = createDbClient(env.DATABASE_URL);
   const userRepository = new UserRepository(db);
   const presentationRepository = new PresentationRepository(db);
+  const settingRepository = new SettingRepository(db);
 
   await userRepository.ensureSuperAdmin(env.SUPER_ADMIN_ID);
 
-  const aiClient = env.ANTHROPIC_API_KEY ? new AiClient(env.ANTHROPIC_API_KEY, env.CLAUDE_MODEL) : null;
+  // The admin panel's model choice (persisted here) overrides CLAUDE_MODEL
+  // once one has ever been picked; CLAUDE_MODEL only seeds the very first run.
+  const storedModel = await settingRepository.get(AI_MODEL_SETTING_KEY);
+  const model = storedModel ?? env.CLAUDE_MODEL;
+
+  const aiClient = env.ANTHROPIC_API_KEY ? new AiClient(env.ANTHROPIC_API_KEY, model) : null;
   if (!aiClient) {
     logger.warn("ANTHROPIC_API_KEY is not set; AI presentation generation is disabled until it is configured");
   }
@@ -36,6 +44,7 @@ async function main(): Promise<void> {
     botToken: env.BOT_TOKEN,
     superAdminId: env.SUPER_ADMIN_ID,
     userRepository,
+    settingRepository,
     presentationService,
   });
 

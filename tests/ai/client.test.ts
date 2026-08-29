@@ -59,6 +59,20 @@ describe("AiClient.generateSlideCode", () => {
     );
   });
 
+  it("setModel changes the model used for subsequent requests", async () => {
+    createMock.mockResolvedValue({
+      content: [{ type: "text", text: "```javascript\naddSlide();\n```" }],
+    });
+    const client = new AiClient("test-key", "claude-opus-4-5");
+    expect(client.getModel()).toBe("claude-opus-4-5");
+
+    client.setModel("claude-sonnet-5");
+    expect(client.getModel()).toBe("claude-sonnet-5");
+
+    await client.generateSlideCode({ topic: "Test", slideCount: 5, language: "uz", theme });
+    expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ model: "claude-sonnet-5" }));
+  });
+
   it("throws when Claude returns no text block", async () => {
     createMock.mockResolvedValue({ content: [] });
     const client = new AiClient("test-key", "claude-opus-4-5");

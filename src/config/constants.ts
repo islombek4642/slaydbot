@@ -22,3 +22,11 @@ export const THEME_LABELS: Record<ThemeName, string> = {
 
 export const SANDBOX_TIMEOUT_MS = 5000;
 export const SANDBOX_MEMORY_LIMIT_MB = 128;
+
+export const AI_MODELS = [
+  { id: "claude-sonnet-5", label: "Sonnet 5" },
+  { id: "claude-opus-5", label: "Opus 5" },
+] as const;
+export type AiModelId = (typeof AI_MODELS)[number]["id"];
+export const DEFAULT_AI_MODEL: AiModelId = "claude-sonnet-5";
+export const AI_MODEL_SETTING_KEY = "aiModel";
