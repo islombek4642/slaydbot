@@ -66,4 +66,95 @@ describe("AiClient.generateSlideCode", () => {
       client.generateSlideCode({ topic: "Test", slideCount: 5, language: "uz", theme })
     ).rejects.toThrow(/did not return a text response/);
   });
+
+  describe("retry on transient errors", () => {
+    // A fast, spy-able stand-in for the real delay so tests don't wait on
+    // real multi-second setTimeout backoff.
+    let delayMock: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      delayMock = vi.fn().mockResolvedValue(undefined);
+    });
+
+    function transientError(status: number | undefined) {
+      const error = new Error(`transient ${String(status)}`) as Error & { status?: number };
+      error.status = status;
+      return error;
+    }
+
+    it("succeeds on the first attempt without retrying", async () => {
+      createMock.mockResolvedValue({
+        content: [{ type: "text", text: "```javascript\naddSlide();\n```" }],
+      });
+      const client = new AiClient("test-key", "claude-opus-4-5", delayMock);
+      const code = await client.generateSlideCode({
+        topic: "Test",
+        slideCount: 5,
+        language: "uz",
+        theme,
+      });
+      expect(code).toBe("addSlide();");
+      expect(createMock).toHaveBeenCalledTimes(1);
+      expect(delayMock).not.toHaveBeenCalled();
+    });
+
+    it("retries once after a transient error and then succeeds", async () => {
+      createMock
+        .mockRejectedValueOnce(transientError(429))
+        .mockResolvedValueOnce({
+          content: [{ type: "text", text: "```javascript\naddSlide();\n```" }],
+        });
+      const client = new AiClient("test-key", "claude-opus-4-5", delayMock);
+      const code = await client.generateSlideCode({
+        topic: "Test",
+        slideCount: 5,
+        language: "uz",
+        theme,
+      });
+      expect(code).toBe("addSlide();");
+      expect(createMock).toHaveBeenCalledTimes(2);
+      expect(delayMock).toHaveBeenCalledTimes(1);
+      expect(delayMock).toHaveBeenCalledWith(1000);
+    });
+
+    it("does not retry on a non-transient error", async () => {
+      const nonTransient = transientError(400);
+      createMock.mockRejectedValue(nonTransient);
+      const client = new AiClient("test-key", "claude-opus-4-5", delayMock);
+      await expect(
+        client.generateSlideCode({ topic: "Test", slideCount: 5, language: "uz", theme })
+      ).rejects.toBe(nonTransient);
+      expect(createMock).toHaveBeenCalledTimes(1);
+      expect(delayMock).not.toHaveBeenCalled();
+    });
+
+    it("does not retry a plain error with no status", async () => {
+      const plainError = new Error("boom");
+      createMock.mockRejectedValue(plainError);
+      const client = new AiClient("test-key", "claude-opus-4-5", delayMock);
+      await expect(
+        client.generateSlideCode({ topic: "Test", slideCount: 5, language: "uz", theme })
+      ).rejects.toBe(plainError);
+      expect(createMock).toHaveBeenCalledTimes(1);
+      expect(delayMock).not.toHaveBeenCalled();
+    });
+
+    it("throws the last error after exhausting all retries", async () => {
+      const err1 = transientError(500);
+      const err2 = transientError(500);
+      const err3 = transientError(500);
+      createMock
+        .mockRejectedValueOnce(err1)
+        .mockRejectedValueOnce(err2)
+        .mockRejectedValueOnce(err3);
+      const client = new AiClient("test-key", "claude-opus-4-5", delayMock);
+      await expect(
+        client.generateSlideCode({ topic: "Test", slideCount: 5, language: "uz", theme })
+      ).rejects.toBe(err3);
+      expect(createMock).toHaveBeenCalledTimes(3);
+      expect(delayMock).toHaveBeenCalledTimes(2);
+      expect(delayMock).toHaveBeenNthCalledWith(1, 1000);
+      expect(delayMock).toHaveBeenNthCalledWith(2, 2000);
+    });
+  });
 });
