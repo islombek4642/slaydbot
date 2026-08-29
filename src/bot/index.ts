@@ -65,5 +65,16 @@ export function createBot(deps: BotDependencies): Bot<MyContext> {
 
   bot.callbackQuery(/^adminList:/, createAdminListCallbackHandler(deps.userRepository, deps.superAdminId));
 
+  // Fallback for any text that matched none of the hears() above (e.g. a
+  // stale button label left over from a previous keyboard/version, or a
+  // conversation that ended without replacing its keyboard). Registered
+  // last so it only runs when nothing else claimed the update; an active
+  // conversation's waitFor() consumes matching updates upstream and never
+  // reaches this handler.
+  bot.on("message:text", async (ctx) => {
+    const superAdmin = isSuperAdmin(BigInt(ctx.from!.id), deps.superAdminId);
+    await ctx.reply(t("start.welcome"), { reply_markup: buildMainMenuKeyboard(superAdmin) });
+  });
+
   return bot;
 }
