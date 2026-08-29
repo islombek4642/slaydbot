@@ -53,6 +53,9 @@ export function createBot(deps: BotDependencies): Bot<MyContext> {
   });
 
   bot.hears(t("admin.addUser"), async (ctx) => {
+    if (!isSuperAdmin(BigInt(ctx.from!.id), deps.superAdminId)) {
+      return;
+    }
     await ctx.conversation.enter("adminAddUser");
   });
 

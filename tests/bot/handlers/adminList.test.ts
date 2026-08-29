@@ -115,6 +115,19 @@ describe("createAdminListCallbackHandler", () => {
     expect(ctx.answerCallbackQuery).toHaveBeenCalledTimes(1);
   });
 
+  it("does not throw and still acks on malformed (non-numeric) callback data", async () => {
+    userRepository.listAll.mockResolvedValue([superRow, rowA, rowB]);
+    const handler = createAdminListCallbackHandler(userRepository as any, SUPER_ADMIN_ID);
+    const ctx = createCtx({ callbackQuery: { data: "adminList:askDelete:not-a-number:0" } });
+
+    await expect(handler(ctx)).resolves.toBeUndefined();
+
+    expect(ctx.editMessageText).not.toHaveBeenCalled();
+    expect(userRepository.remove).not.toHaveBeenCalled();
+    expect(ctx.answerCallbackQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.answerCallbackQuery).toHaveBeenCalledWith();
+  });
+
   it("confirmDelete removes the target and re-renders the remaining list", async () => {
     userRepository.listAll.mockResolvedValue([superRow, rowB]);
     const handler = createAdminListCallbackHandler(userRepository as any, SUPER_ADMIN_ID);
