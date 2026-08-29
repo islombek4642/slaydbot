@@ -117,6 +117,25 @@ describe("AiClient.generateSlideCode", () => {
       expect(delayMock).toHaveBeenCalledWith(1000);
     });
 
+    it("retries a 408 (request timeout) error and then succeeds", async () => {
+      createMock
+        .mockRejectedValueOnce(transientError(408))
+        .mockResolvedValueOnce({
+          content: [{ type: "text", text: "```javascript\naddSlide();\n```" }],
+        });
+      const client = new AiClient("test-key", "claude-opus-4-5", delayMock);
+      const code = await client.generateSlideCode({
+        topic: "Test",
+        slideCount: 5,
+        language: "uz",
+        theme,
+      });
+      expect(code).toBe("addSlide();");
+      expect(createMock).toHaveBeenCalledTimes(2);
+      expect(delayMock).toHaveBeenCalledTimes(1);
+      expect(delayMock).toHaveBeenCalledWith(1000);
+    });
+
     it("does not retry on a non-transient error", async () => {
       const nonTransient = transientError(400);
       createMock.mockRejectedValue(nonTransient);

@@ -28,19 +28,23 @@ const BASE_BACKOFF_MS = 1000; // 1s, then 2s
  * The real SDK (`@anthropic-ai/sdk`) represents API failures as `Anthropic.APIError`
  * subclasses that all carry a numeric `.status` — except connection-level failures
  * (`APIConnectionError` / `APIConnectionTimeoutError`), whose `.status` is `undefined`.
- * We treat "no status" (network/connection errors) and HTTP 429 (rate limit) / 5xx
- * (server error) as transient. Any other 4xx (400 bad request, 401/403 auth, 404, 409,
- * 422) is a client-side problem that retrying can't fix, so it is not transient. We
- * check duck-typed shape (`"status" in error`) rather than `instanceof Anthropic.APIError`
- * so this also works against test doubles that mimic the SDK's error shape without
- * constructing the real class.
+ * We treat "no status" (network/connection errors), HTTP 408 (request timeout), HTTP 429
+ * (rate limit), and 5xx (server error) as transient. Any other 4xx (400 bad request,
+ * 401/403 auth, 404, 409, 422) is a client-side problem that retrying can't fix, so it
+ * is not transient. We check duck-typed shape (`"status" in error`) rather than
+ * `instanceof Anthropic.APIError` so this also works against test doubles that mimic
+ * the SDK's error shape without constructing the real class.
+ *
+ * Note: the SDK's own default retries (`maxRetries`) are disabled via `maxRetries: 0`
+ * in the `Anthropic` client constructor below, so this retry loop is the sole retry
+ * layer — 408 previously landed here only after the SDK partially retried it itself.
  */
 export function isTransientError(error: unknown): boolean {
   if (!(error instanceof Error) || !("status" in error)) {
     return false;
   }
   const status = (error as { status?: number }).status;
-  return status === undefined || status === 429 || status >= 500;
+  return status === undefined || status === 408 || status === 429 || status >= 500;
 }
 
 export class AiClient {
@@ -48,7 +52,7 @@ export class AiClient {
   private readonly delay: DelayFn;
 
   constructor(apiKey: string, private readonly model: string, delay: DelayFn = defaultDelay) {
-    this.client = new Anthropic({ apiKey });
+    this.client = new Anthropic({ apiKey, maxRetries: 0 });
     this.delay = delay;
   }
 
