@@ -28,17 +28,19 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd -m -u 1000 appuser
+    && rm -rf /var/lib/apt/lists/*
 
+# node:20-slim already ships a non-root "node" user (uid/gid 1000) -
+# creating our own appuser at uid 1000 collides with it ("UID 1000 is
+# not unique"), so we reuse the image's built-in user instead.
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
 COPY package.json ./
 
-RUN chown -R appuser:appuser /app
-USER appuser
+RUN chown -R node:node /app
+USER node
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:3000/health || exit 1

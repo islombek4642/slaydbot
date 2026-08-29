@@ -3246,6 +3246,15 @@ git commit -m "feat: add webhook HTTP server entrypoint"
 
 - [ ] **Step 1: Write the Dockerfile**
 
+> **Corrections (discovered during implementation/real deploy):** `prisma
+> generate` needs `prisma.config.ts` copied in and a dummy `DATABASE_URL`
+> (Prisma 7's config loader throws without one, even though `generate`
+> never connects to a database). Separately, a real deploy on the target
+> server failed with `useradd: UID 1000 is not unique` — `node:20-slim`
+> already ships a built-in non-root `node` user at uid/gid 1000, so
+> creating `appuser` at the same uid collides with it. Fixed by reusing
+> the image's own `node` user instead of creating a new one.
+
 ```dockerfile
 # --- Stage 1: build ---
 FROM node:20-slim AS builder
@@ -3257,7 +3266,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 make g+
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# prisma.config.ts is required by Prisma 7's config loader (it does
+# `import "dotenv/config"` and reads `env("DATABASE_URL")` via @prisma/config,
+# which throws PrismaConfigEnvError if DATABASE_URL is unset). `prisma generate`
+# never connects to a database, so a dummy value is enough to satisfy the
+# config loader for this build-time step only.
 COPY prisma ./prisma
+COPY prisma.config.ts ./
+ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 RUN npx prisma generate
 
 COPY tsconfig.json ./
@@ -3270,16 +3286,19 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd -m -u 1000 appuser
+    && rm -rf /var/lib/apt/lists/*
 
+# node:20-slim already ships a non-root "node" user (uid/gid 1000) -
+# creating our own appuser at uid 1000 collides with it ("UID 1000 is
+# not unique"), so we reuse the image's built-in user instead.
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./
 COPY package.json ./
 
-RUN chown -R appuser:appuser /app
-USER appuser
+RUN chown -R node:node /app
+USER node
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:3000/health || exit 1
