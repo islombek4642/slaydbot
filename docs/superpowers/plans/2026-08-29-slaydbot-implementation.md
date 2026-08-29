@@ -2859,6 +2859,7 @@ git commit -m "feat: add pure parsers for callback data and Telegram ids"
 ```ts
 // src/bot/conversations/presentationWizard.ts
 import { InputFile } from "grammy";
+import type { Context } from "grammy";
 import type { Conversation } from "@grammyjs/conversations";
 import type { MyContext } from "../context";
 import { t } from "../../i18n/t";
@@ -2873,7 +2874,7 @@ import type { PresentationService } from "../../services/presentationService";
 import type { ThemeName, PresentationLanguageCode } from "../../config/constants";
 
 export function createPresentationWizard(presentationService: PresentationService) {
-  return async function presentationWizard(conversation: Conversation<MyContext>, ctx: MyContext): Promise<void> {
+  return async function presentationWizard(conversation: Conversation<MyContext>, ctx: Context): Promise<void> {
     await ctx.reply(t("wizard.askTopic"), { reply_markup: buildCancelKeyboard() });
     const topicCtx = await conversation.waitFor(["message:text", "callback_query:data"]);
     if (topicCtx.has("callback_query:data")) {
@@ -2944,6 +2945,7 @@ git commit -m "feat: add presentation creation wizard conversation"
 
 ```ts
 // src/bot/conversations/adminAddUser.ts
+import type { Context } from "grammy";
 import type { Conversation } from "@grammyjs/conversations";
 import type { MyContext } from "../context";
 import { t } from "../../i18n/t";
@@ -2951,7 +2953,7 @@ import { parseTelegramId } from "./parsers";
 import type { UserRepository } from "../../db/repositories/userRepository";
 
 export function createAdminAddUserConversation(userRepository: UserRepository) {
-  return async function adminAddUser(conversation: Conversation<MyContext>, ctx: MyContext): Promise<void> {
+  return async function adminAddUser(conversation: Conversation<MyContext>, ctx: Context): Promise<void> {
     await ctx.reply(t("admin.addUser.askId"));
     const idCtx = await conversation.waitFor("message:text");
     let targetId: bigint;
@@ -2972,6 +2974,7 @@ export function createAdminAddUserConversation(userRepository: UserRepository) {
 
 ```ts
 // src/bot/conversations/adminRemoveUser.ts
+import type { Context } from "grammy";
 import type { Conversation } from "@grammyjs/conversations";
 import type { MyContext } from "../context";
 import { t } from "../../i18n/t";
@@ -2979,7 +2982,7 @@ import { parseTelegramId } from "./parsers";
 import type { UserRepository } from "../../db/repositories/userRepository";
 
 export function createAdminRemoveUserConversation(userRepository: UserRepository) {
-  return async function adminRemoveUser(conversation: Conversation<MyContext>, ctx: MyContext): Promise<void> {
+  return async function adminRemoveUser(conversation: Conversation<MyContext>, ctx: Context): Promise<void> {
     await ctx.reply(t("admin.removeUser.askId"));
     const idCtx = await conversation.waitFor("message:text");
     let targetId: bigint;
@@ -2999,6 +3002,7 @@ export function createAdminRemoveUserConversation(userRepository: UserRepository
 
 ```ts
 // src/bot/conversations/adminPromote.ts
+import type { Context } from "grammy";
 import type { Conversation } from "@grammyjs/conversations";
 import type { MyContext } from "../context";
 import { t } from "../../i18n/t";
@@ -3006,7 +3010,7 @@ import { parseTelegramId } from "./parsers";
 import type { UserRepository } from "../../db/repositories/userRepository";
 
 export function createAdminPromoteConversation(userRepository: UserRepository) {
-  return async function adminPromote(conversation: Conversation<MyContext>, ctx: MyContext): Promise<void> {
+  return async function adminPromote(conversation: Conversation<MyContext>, ctx: Context): Promise<void> {
     await ctx.reply(t("admin.promote.askId"));
     const idCtx = await conversation.waitFor("message:text");
     let targetId: bigint;
@@ -3040,7 +3044,10 @@ git commit -m "feat: add admin add/remove/promote conversations"
 
 ```ts
 // src/bot/index.ts
-import { Bot, session } from "grammy";
+import { Bot } from "grammy";
+// Note: @grammyjs/conversations v2 manages its own state internally and
+// does NOT need grammY's core session() middleware - MyContext has no
+// SessionFlavor, so bot.use(session(...)) would not type-check here.
 import { conversations, createConversation } from "@grammyjs/conversations";
 import type { MyContext } from "./context";
 import { t } from "../i18n/t";
@@ -3068,7 +3075,6 @@ export interface BotDependencies {
 export function createBot(deps: BotDependencies): Bot<MyContext> {
   const bot = new Bot<MyContext>(deps.botToken);
 
-  bot.use(session({ initial: () => ({}) }));
   bot.use(conversations());
   bot.use(createConversation(createPresentationWizard(deps.presentationService), "presentationWizard"));
   bot.use(createConversation(createAdminAddUserConversation(deps.userRepository), "adminAddUser"));
