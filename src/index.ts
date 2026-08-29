@@ -10,6 +10,7 @@ import { PresentationService } from "./services/presentationService";
 import { IconCache } from "./pptx/icons/iconCache";
 import { createBot } from "./bot";
 import { createLogger } from "./logger";
+import { t } from "./i18n/t";
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -39,6 +40,15 @@ async function main(): Promise<void> {
   });
 
   await bot.init();
+
+  // Only /start and /help are meant to appear in Telegram clients' "/"
+  // command menu (per the design spec) - everything else is button-driven.
+  // bot.command(...) alone only registers a handler; the visible menu
+  // needs this separate call.
+  await bot.api.setMyCommands([
+    { command: "start", description: t("start.commandDescription") },
+    { command: "help", description: t("help.commandDescription") },
+  ]);
 
   const handleUpdate = webhookCallback(bot, "http", { secretToken: env.WEBHOOK_SECRET });
 
