@@ -7,6 +7,7 @@ import { UserRepository } from "./db/repositories/userRepository";
 import { PresentationRepository } from "./db/repositories/presentationRepository";
 import { AiClient } from "./ai/client";
 import { PresentationService } from "./services/presentationService";
+import { IconCache } from "./pptx/icons/iconCache";
 import { createBot } from "./bot";
 import { createLogger } from "./logger";
 
@@ -20,7 +21,12 @@ async function main(): Promise<void> {
   await userRepository.ensureSuperAdmin(env.SUPER_ADMIN_ID);
 
   const aiClient = new AiClient(env.ANTHROPIC_API_KEY, env.CLAUDE_MODEL);
-  const presentationService = new PresentationService(aiClient, presentationRepository);
+  const presentationService = new PresentationService(
+    aiClient,
+    presentationRepository,
+    new IconCache(),
+    logger
+  );
 
   const bot = createBot({
     botToken: env.BOT_TOKEN,

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { AiClient } from "../ai/client";
 import { validateGeneratedCode } from "../ai/codeValidator";
 import { runInSandbox } from "../pptx/sandbox";
@@ -7,6 +8,7 @@ import { IconCache } from "../pptx/icons/iconCache";
 import { getTheme } from "../pptx/themes";
 import type { ThemeName } from "../config/constants";
 import type { PresentationRepository } from "../db/repositories/presentationRepository";
+import { createLogger, type Logger } from "../logger";
 
 export interface GeneratePresentationInput {
   userId: bigint;
@@ -26,11 +28,23 @@ export class PresentationService {
   constructor(
     private readonly aiClient: AiClient,
     private readonly presentationRepository: PresentationRepository,
-    private readonly iconCache: IconCache = new IconCache()
+    private readonly iconCache: IconCache = new IconCache(),
+    private readonly logger: Logger = createLogger()
   ) {}
 
   async generate(input: GeneratePresentationInput): Promise<GeneratePresentationResult> {
+    const requestId = randomUUID();
     let recordId: string | undefined;
+
+    this.logger.info(
+      {
+        requestId,
+        userId: input.userId.toString(),
+        topic: input.topic,
+        themeName: input.themeName,
+      },
+      "Presentation generation started"
+    );
 
     try {
       const theme = getTheme(input.themeName);
@@ -66,12 +80,14 @@ export class PresentationService {
 
       const buffer = await builder.toBuffer();
       await this.presentationRepository.markSuccess(recordId);
+      this.logger.info({ requestId, recordId }, "Presentation generation succeeded");
       return { success: true, buffer };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (recordId) {
         await this.presentationRepository.markFailed(recordId, message);
       }
+      this.logger.error({ requestId, recordId, error: message }, "Presentation generation failed");
       return { success: false, errorMessage: message };
     }
   }
