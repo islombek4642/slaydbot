@@ -1,11 +1,12 @@
 import type { Conversation } from "@grammyjs/conversations";
+import type { Context } from "grammy";
 import type { MyContext } from "../context";
 import { t } from "../../i18n/t";
 import { parseTelegramId } from "./parsers";
 import type { UserRepository } from "../../db/repositories/userRepository";
 
 export function createAdminPromoteConversation(userRepository: UserRepository) {
-  return async function adminPromote(conversation: Conversation<MyContext>, ctx: MyContext): Promise<void> {
+  return async function adminPromote(conversation: Conversation<MyContext>, ctx: Context): Promise<void> {
     await ctx.reply(t("admin.promote.askId"));
     const idCtx = await conversation.waitFor("message:text");
     let targetId: bigint;

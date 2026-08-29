@@ -1,4 +1,4 @@
-import { InputFile } from "grammy";
+import { InputFile, type Context } from "grammy";
 import type { Conversation } from "@grammyjs/conversations";
 import type { MyContext } from "../context";
 import { t } from "../../i18n/t";
@@ -13,7 +13,7 @@ import type { PresentationService } from "../../services/presentationService";
 import type { ThemeName, PresentationLanguageCode } from "../../config/constants";
 
 export function createPresentationWizard(presentationService: PresentationService) {
-  return async function presentationWizard(conversation: Conversation<MyContext>, ctx: MyContext): Promise<void> {
+  return async function presentationWizard(conversation: Conversation<MyContext>, ctx: Context): Promise<void> {
     await ctx.reply(t("wizard.askTopic"), { reply_markup: buildCancelKeyboard() });
     const topicCtx = await conversation.waitFor(["message:text", "callback_query:data"]);
     if (topicCtx.has("callback_query:data")) {

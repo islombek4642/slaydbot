@@ -1,11 +1,12 @@
 import type { Conversation } from "@grammyjs/conversations";
+import type { Context } from "grammy";
 import type { MyContext } from "../context";
 import { t } from "../../i18n/t";
 import { parseTelegramId } from "./parsers";
 import type { UserRepository } from "../../db/repositories/userRepository";
 
 export function createAdminRemoveUserConversation(userRepository: UserRepository) {
-  return async function adminRemoveUser(conversation: Conversation<MyContext>, ctx: MyContext): Promise<void> {
+  return async function adminRemoveUser(conversation: Conversation<MyContext>, ctx: Context): Promise<void> {
     await ctx.reply(t("admin.removeUser.askId"));
     const idCtx = await conversation.waitFor("message:text");
     let targetId: bigint;
