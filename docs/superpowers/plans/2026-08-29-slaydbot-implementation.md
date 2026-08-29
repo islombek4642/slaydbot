@@ -3464,6 +3464,19 @@ if [[ ! -f .env ]]; then
   exit 1
 fi
 
+# Correction (added after a real deploy required manually generating a
+# secret): auto-generate WEBHOOK_SECRET if it's missing/empty in .env,
+# instead of making the operator run `openssl rand -hex 32` by hand.
+if ! grep -q '^WEBHOOK_SECRET=.\+' .env; then
+  NEW_WEBHOOK_SECRET=$(openssl rand -hex 32)
+  if grep -q '^WEBHOOK_SECRET=' .env; then
+    sed -i "s|^WEBHOOK_SECRET=.*|WEBHOOK_SECRET=${NEW_WEBHOOK_SECRET}|" .env
+  else
+    echo "WEBHOOK_SECRET=${NEW_WEBHOOK_SECRET}" >> .env
+  fi
+  echo -e "${GREEN}WEBHOOK_SECRET was empty - generated one automatically.${NC}"
+fi
+
 echo -e "${YELLOW}[2/6] Backing up database...${NC}"
 mkdir -p backups
 if sudo docker ps --format '{{.Names}}' | grep -q 'slaydbot_db'; then
