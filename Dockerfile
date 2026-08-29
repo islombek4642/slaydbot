@@ -1,5 +1,8 @@
+# Node 22+ is required: isolated-vm@6.2.0's native addon uses V8 APIs
+# (v8::SourceLocation) that only exist in the V8 build shipped with
+# Node 22, so it fails to compile against Node 20's older V8 headers.
 # --- Stage 1: build ---
-FROM node:20-slim AS builder
+FROM node:22-slim AS builder
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
@@ -23,7 +26,7 @@ COPY src ./src
 RUN npm run build
 
 # --- Stage 2: runtime ---
-FROM node:20-slim AS runtime
+FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 

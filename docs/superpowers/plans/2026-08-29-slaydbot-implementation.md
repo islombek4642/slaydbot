@@ -3249,15 +3249,26 @@ git commit -m "feat: add webhook HTTP server entrypoint"
 > **Corrections (discovered during implementation/real deploy):** `prisma
 > generate` needs `prisma.config.ts` copied in and a dummy `DATABASE_URL`
 > (Prisma 7's config loader throws without one, even though `generate`
-> never connects to a database). Separately, a real deploy on the target
-> server failed with `useradd: UID 1000 is not unique` — `node:20-slim`
-> already ships a built-in non-root `node` user at uid/gid 1000, so
-> creating `appuser` at the same uid collides with it. Fixed by reusing
-> the image's own `node` user instead of creating a new one.
+> never connects to a database). A real deploy on the target server first
+> failed with `useradd: UID 1000 is not unique` — `node:20-slim` already
+> ships a built-in non-root `node` user at uid/gid 1000, so creating
+> `appuser` at the same uid collides with it; fixed by reusing the
+> image's own `node` user. A second real deploy then failed on `npm ci`:
+> `isolated-vm@6.2.0`'s native addon uses V8 APIs (`v8::SourceLocation`)
+> that only exist in the V8 build shipped with Node 22 (`npm warn
+> EBADENGINE ... isolated-vm@6.2.0 required: {node: '>=22.0.0'}`), so it
+> fails to compile against Node 20's older V8 headers — the dev machine
+> had Node 22 installed already, masking this until a real Docker build
+> (pinned to `node:20-slim`) ran on the server. Fixed by bumping both
+> Dockerfile stages to `node:22-slim` and adding `"engines": {"node":
+> ">=22.0.0"}` to `package.json` so this requirement is explicit.
 
 ```dockerfile
+# Node 22+ is required: isolated-vm@6.2.0's native addon uses V8 APIs
+# (v8::SourceLocation) that only exist in the V8 build shipped with
+# Node 22, so it fails to compile against Node 20's older V8 headers.
 # --- Stage 1: build ---
-FROM node:20-slim AS builder
+FROM node:22-slim AS builder
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
@@ -3281,14 +3292,14 @@ COPY src ./src
 RUN npm run build
 
 # --- Stage 2: runtime ---
-FROM node:20-slim AS runtime
+FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# node:20-slim already ships a non-root "node" user (uid/gid 1000) -
+# node:22-slim already ships a non-root "node" user (uid/gid 1000) -
 # creating our own appuser at uid 1000 collides with it ("UID 1000 is
 # not unique"), so we reuse the image's built-in user instead.
 COPY --from=builder /app/node_modules ./node_modules
