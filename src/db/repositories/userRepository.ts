@@ -4,6 +4,7 @@ export interface UserRecord {
   id: bigint;
   username: string | null;
   firstName: string | null;
+  lastName: string | null;
   isAdmin: boolean;
   addedById: bigint | null;
   createdAt: Date;
@@ -12,6 +13,7 @@ export interface UserRecord {
 export interface UserProfile {
   username?: string;
   firstName?: string;
+  lastName?: string;
 }
 
 export class UserRepository {
@@ -40,6 +42,7 @@ export class UserRepository {
         addedById,
         username: profile.username,
         firstName: profile.firstName,
+        lastName: profile.lastName,
         isAdmin: true,
       },
     });
@@ -48,7 +51,7 @@ export class UserRepository {
   async updateProfile(id: bigint, profile: UserProfile): Promise<void> {
     await this.db.user.update({
       where: { id },
-      data: { username: profile.username, firstName: profile.firstName },
+      data: { username: profile.username, firstName: profile.firstName, lastName: profile.lastName },
     });
   }
 

@@ -46,22 +46,29 @@ describe("UserRepository", () => {
     const db = createMockDb();
     db.user.upsert.mockResolvedValue({ id: 2n, isAdmin: true });
     const repo = new UserRepository(db as any);
-    await repo.add(2n, 1n, { username: "ali" });
+    await repo.add(2n, 1n, { username: "ali", firstName: "Ali", lastName: "Valiyev" });
     expect(db.user.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 2n },
-        create: expect.objectContaining({ id: 2n, addedById: 1n, isAdmin: true, username: "ali" }),
+        create: expect.objectContaining({
+          id: 2n,
+          addedById: 1n,
+          isAdmin: true,
+          username: "ali",
+          firstName: "Ali",
+          lastName: "Valiyev",
+        }),
       })
     );
   });
 
-  it("updateProfile updates the user's username and first name", async () => {
+  it("updateProfile updates the user's username, first name, and last name", async () => {
     const db = createMockDb();
     const repo = new UserRepository(db as any);
-    await repo.updateProfile(3n, { username: "vali", firstName: "Vali" });
+    await repo.updateProfile(3n, { username: "vali", firstName: "Vali", lastName: "Karimov" });
     expect(db.user.update).toHaveBeenCalledWith({
       where: { id: 3n },
-      data: { username: "vali", firstName: "Vali" },
+      data: { username: "vali", firstName: "Vali", lastName: "Karimov" },
     });
   });
 

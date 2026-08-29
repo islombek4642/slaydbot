@@ -23,6 +23,7 @@ export function createAdminAddUserConversation(userRepository: UserRepository) {
       profile = {
         username: origin.sender_user.username,
         firstName: origin.sender_user.first_name,
+        lastName: origin.sender_user.last_name,
       };
     } else if (idCtx.has("message:text")) {
       try {

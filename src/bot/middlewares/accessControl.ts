@@ -16,6 +16,7 @@ export function createAccessControlMiddleware(userRepository: UserRepository) {
     await userRepository.updateProfile(BigInt(userId), {
       username: ctx.from?.username,
       firstName: ctx.from?.first_name,
+      lastName: ctx.from?.last_name,
     });
     await next();
   };

@@ -9,7 +9,7 @@ export function formatAdminCard(admin: UserRecord, position: number, total: numb
   return t("admin.list.card", {
     position,
     total,
-    name: admin.firstName ?? admin.username ?? "—",
+    name: [admin.firstName, admin.lastName].filter(Boolean).join(" ") || admin.username || "—",
     username: admin.username ? `@${admin.username}` : "—",
     id: admin.id.toString(),
   });

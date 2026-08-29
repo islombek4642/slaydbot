@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { createAccessControlMiddleware } from "../../../src/bot/middlewares/accessControl";
 
-function createMockCtx(userId: number | undefined, profile?: { username?: string; first_name?: string }) {
+function createMockCtx(
+  userId: number | undefined,
+  profile?: { username?: string; first_name?: string; last_name?: string }
+) {
   return {
     from: userId === undefined ? undefined : { id: userId, ...profile },
     reply: vi.fn(),
@@ -15,12 +18,16 @@ describe("createAccessControlMiddleware", () => {
       updateProfile: vi.fn(),
     } as any;
     const middleware = createAccessControlMiddleware(userRepository);
-    const ctx = createMockCtx(1, { username: "ali", first_name: "Ali" });
+    const ctx = createMockCtx(1, { username: "ali", first_name: "Ali", last_name: "Valiyev" });
     const next = vi.fn();
     await middleware(ctx, next);
     expect(next).toHaveBeenCalled();
     expect(ctx.reply).not.toHaveBeenCalled();
-    expect(userRepository.updateProfile).toHaveBeenCalledWith(1n, { username: "ali", firstName: "Ali" });
+    expect(userRepository.updateProfile).toHaveBeenCalledWith(1n, {
+      username: "ali",
+      firstName: "Ali",
+      lastName: "Valiyev",
+    });
   });
 
   it("replies with access denied and skips next() when the user is not allowed", async () => {
