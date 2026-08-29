@@ -7,8 +7,8 @@ describe("t", () => {
   });
 
   it("interpolates params", () => {
-    const result = t("admin.listUsers.item", { index: 1, name: "Ali", id: 555 });
-    expect(result).toBe("1. Ali — ID: 555");
+    const result = t("admin.list.confirmDelete", { name: "Ali", id: 555 });
+    expect(result).toBe("Rostdan ham Ali (ID: 555) ni o'chirmoqchimisiz?");
   });
 
   it("throws for an unknown key", () => {

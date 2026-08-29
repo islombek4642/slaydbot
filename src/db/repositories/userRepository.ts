@@ -40,17 +40,13 @@ export class UserRepository {
         addedById,
         username: profile.username,
         firstName: profile.firstName,
-        isAdmin: false,
+        isAdmin: true,
       },
     });
   }
 
   async remove(id: bigint): Promise<void> {
     await this.db.user.delete({ where: { id } });
-  }
-
-  async promote(id: bigint): Promise<UserRecord> {
-    return this.db.user.update({ where: { id }, data: { isAdmin: true } });
   }
 
   async listAll(): Promise<UserRecord[]> {

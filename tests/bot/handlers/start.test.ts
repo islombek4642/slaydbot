@@ -1,10 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { createStartHandler } from "../../../src/bot/handlers/start";
 
+const SUPER_ADMIN_ID = 1n;
+
 describe("createStartHandler", () => {
-  it("replies with the welcome message and a menu including the admin panel for admins", async () => {
-    const userRepository = { isAdmin: vi.fn().mockResolvedValue(true) } as any;
-    const handler = createStartHandler(userRepository);
+  it("replies with the welcome message and a menu including the admin panel for the super admin", async () => {
+    const handler = createStartHandler(SUPER_ADMIN_ID);
     const ctx = { from: { id: 1 }, reply: vi.fn() } as any;
     await handler(ctx);
     expect(ctx.reply).toHaveBeenCalledTimes(1);
@@ -14,9 +15,8 @@ describe("createStartHandler", () => {
     expect(texts).toContain("⚙️ Admin panel");
   });
 
-  it("omits the admin panel button for non-admins", async () => {
-    const userRepository = { isAdmin: vi.fn().mockResolvedValue(false) } as any;
-    const handler = createStartHandler(userRepository);
+  it("omits the admin panel button for non-super-admins", async () => {
+    const handler = createStartHandler(SUPER_ADMIN_ID);
     const ctx = { from: { id: 2 }, reply: vi.fn() } as any;
     await handler(ctx);
     const [, options] = ctx.reply.mock.calls[0];

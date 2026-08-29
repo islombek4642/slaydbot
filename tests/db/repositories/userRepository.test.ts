@@ -42,15 +42,15 @@ describe("UserRepository", () => {
     await expect(repo.isAdmin(1n)).resolves.toBe(false);
   });
 
-  it("add upserts a non-admin user recording who added them", async () => {
+  it("add upserts a new admin user recording who added them", async () => {
     const db = createMockDb();
-    db.user.upsert.mockResolvedValue({ id: 2n, isAdmin: false });
+    db.user.upsert.mockResolvedValue({ id: 2n, isAdmin: true });
     const repo = new UserRepository(db as any);
     await repo.add(2n, 1n, { username: "ali" });
     expect(db.user.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 2n },
-        create: expect.objectContaining({ id: 2n, addedById: 1n, isAdmin: false, username: "ali" }),
+        create: expect.objectContaining({ id: 2n, addedById: 1n, isAdmin: true, username: "ali" }),
       })
     );
   });
@@ -60,13 +60,6 @@ describe("UserRepository", () => {
     const repo = new UserRepository(db as any);
     await repo.remove(5n);
     expect(db.user.delete).toHaveBeenCalledWith({ where: { id: 5n } });
-  });
-
-  it("promote sets isAdmin to true", async () => {
-    const db = createMockDb();
-    const repo = new UserRepository(db as any);
-    await repo.promote(5n);
-    expect(db.user.update).toHaveBeenCalledWith({ where: { id: 5n }, data: { isAdmin: true } });
   });
 
   it("ensureSuperAdmin upserts the given id as an admin", async () => {
