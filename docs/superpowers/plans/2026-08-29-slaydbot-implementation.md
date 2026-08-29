@@ -3453,19 +3453,39 @@ cd "$PROJECT_DIR"
 
 echo -e "${GREEN}=== Slaydbot Deployment ===${NC}"
 
-> **Correction (added after a real deploy crash-looped):** the bot's own
-> startup (`main()` -> `ensureSuperAdmin()`) queries the `User` table
-> immediately, so on a fresh/un-migrated database it crashes, gets
-> restarted a few times by `restart: on-failure:5`, then gives up - at
-> which point `docker compose exec bot ...` can no longer reach it
-> ("service bot is not running"), and the migrate step that was meant to
-> fix this never runs. Fixed by running migrations via
-> `docker compose run --rm bot ...` (a one-off container, not the
-> long-running `bot` service - `run` still honors `db`'s
-> `depends_on: condition: service_healthy`) BEFORE `docker compose up -d`
-> ever starts the real `bot` service. Step count is now 7, not 6.
+> **Corrections (found on real deploys):**
+> 1. The bot's own startup (`main()` -> `ensureSuperAdmin()`) queries the
+>    `User` table immediately, so on a fresh/un-migrated database it
+>    crashes, gets restarted a few times by `restart: on-failure:5`, then
+>    gives up - at which point `docker compose exec bot ...` can no longer
+>    reach it ("service bot is not running"), and the migrate step that
+>    was meant to fix this never runs. Fixed by running migrations via
+>    `docker compose run --rm bot ...` (a one-off container, not the
+>    long-running `bot` service - `run` still honors `db`'s
+>    `depends_on: condition: service_healthy`) BEFORE `docker compose up
+>    -d` ever starts the real `bot` service.
+> 2. A script that `git pull`s new code into the very file bash is
+>    currently executing keeps running the OLD content for the rest of
+>    its steps (bash already has that file open) - so a fix committed to
+>    `deploy.sh` itself silently didn't take effect until the *next* run.
+>    Fixed by moving the pull to the very first step and re-executing
+>    (`exec bash "$0" "$@"`) right after it, so every step that follows is
+>    guaranteed to run from the freshly pulled file. Step count is now 7,
+>    with pulling first.
 
-echo -e "${YELLOW}[1/7] Pre-flight checks...${NC}"
+echo -e "${YELLOW}[1/7] Pulling latest code...${NC}"
+if [[ -z "${SLAYDBOT_DEPLOY_REEXECUTED:-}" ]]; then
+  git stash
+  git pull origin master
+  git stash pop 2>/dev/null || true
+  echo "Re-executing deploy.sh from the freshly pulled version..."
+  export SLAYDBOT_DEPLOY_REEXECUTED=1
+  exec bash "$0" "$@"
+else
+  echo "Already running the freshly pulled version."
+fi
+
+echo -e "${YELLOW}[2/7] Pre-flight checks...${NC}"
 if ! command -v docker &> /dev/null; then
   echo -e "${RED}Docker not installed. Installing...${NC}"
   curl -fsSL https://get.docker.com | sudo sh
@@ -3476,9 +3496,6 @@ if [[ ! -f .env ]]; then
   exit 1
 fi
 
-# Correction (added after a real deploy required manually generating a
-# secret): auto-generate WEBHOOK_SECRET if it's missing/empty in .env,
-# instead of making the operator run `openssl rand -hex 32` by hand.
 if ! grep -q '^WEBHOOK_SECRET=.\+' .env; then
   NEW_WEBHOOK_SECRET=$(openssl rand -hex 32)
   if grep -q '^WEBHOOK_SECRET=' .env; then
@@ -3489,7 +3506,7 @@ if ! grep -q '^WEBHOOK_SECRET=.\+' .env; then
   echo -e "${GREEN}WEBHOOK_SECRET was empty - generated one automatically.${NC}"
 fi
 
-echo -e "${YELLOW}[2/7] Backing up database...${NC}"
+echo -e "${YELLOW}[3/7] Backing up database...${NC}"
 mkdir -p backups
 if sudo docker ps --format '{{.Names}}' | grep -q 'slaydbot_db'; then
   BACKUP_NAME="backup_$(date +%Y%m%d_%H%M%S)"
@@ -3502,11 +3519,6 @@ if sudo docker ps --format '{{.Names}}' | grep -q 'slaydbot_db'; then
 else
   echo -e "${YELLOW}Backup skipped (container not running)${NC}"
 fi
-
-echo -e "${YELLOW}[3/7] Pulling latest code...${NC}"
-git stash
-git pull origin master
-git stash pop 2>/dev/null || true
 
 echo -e "${YELLOW}[4/7] Ensuring proxy_network exists...${NC}"
 if ! sudo docker network inspect proxy_network &>/dev/null; then

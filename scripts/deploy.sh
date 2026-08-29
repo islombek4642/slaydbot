@@ -14,7 +14,26 @@ cd "$PROJECT_DIR"
 
 echo -e "${GREEN}=== Slaydbot Deployment ===${NC}"
 
-echo -e "${YELLOW}[1/7] Pre-flight checks...${NC}"
+# Pull first, before anything else, and re-exec into the freshly pulled
+# script. Without this, a script that pulls new code into the very file
+# bash is currently executing keeps running with the OLD file content for
+# the rest of its steps (bash already has it open) - so a fix committed to
+# deploy.sh itself would silently not take effect until the NEXT run. `exec`
+# replaces the process image, forcing bash to re-read $0 from disk fresh.
+# SLAYDBOT_DEPLOY_REEXECUTED guards against re-pulling/re-execing forever.
+echo -e "${YELLOW}[1/7] Pulling latest code...${NC}"
+if [[ -z "${SLAYDBOT_DEPLOY_REEXECUTED:-}" ]]; then
+  git stash
+  git pull origin master
+  git stash pop 2>/dev/null || true
+  echo "Re-executing deploy.sh from the freshly pulled version..."
+  export SLAYDBOT_DEPLOY_REEXECUTED=1
+  exec bash "$0" "$@"
+else
+  echo "Already running the freshly pulled version."
+fi
+
+echo -e "${YELLOW}[2/7] Pre-flight checks...${NC}"
 if ! command -v docker &> /dev/null; then
   echo -e "${RED}Docker not installed. Installing...${NC}"
   curl -fsSL https://get.docker.com | sudo sh
@@ -35,7 +54,7 @@ if ! grep -q '^WEBHOOK_SECRET=.\+' .env; then
   echo -e "${GREEN}WEBHOOK_SECRET was empty - generated one automatically.${NC}"
 fi
 
-echo -e "${YELLOW}[2/7] Backing up database...${NC}"
+echo -e "${YELLOW}[3/7] Backing up database...${NC}"
 mkdir -p backups
 if sudo docker ps --format '{{.Names}}' | grep -q 'slaydbot_db'; then
   BACKUP_NAME="backup_$(date +%Y%m%d_%H%M%S)"
@@ -48,11 +67,6 @@ if sudo docker ps --format '{{.Names}}' | grep -q 'slaydbot_db'; then
 else
   echo -e "${YELLOW}Backup skipped (container not running)${NC}"
 fi
-
-echo -e "${YELLOW}[3/7] Pulling latest code...${NC}"
-git stash
-git pull origin master
-git stash pop 2>/dev/null || true
 
 echo -e "${YELLOW}[4/7] Ensuring proxy_network exists...${NC}"
 if ! sudo docker network inspect proxy_network &>/dev/null; then
