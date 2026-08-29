@@ -36,6 +36,11 @@ describe("loadEnv", () => {
     expect(env.ANTHROPIC_API_KEY).toBeUndefined();
   });
 
+  it("succeeds when ANTHROPIC_API_KEY is present but empty (a bare 'KEY=' line in .env), leaving it undefined", () => {
+    const env = loadEnv({ ...validEnv, ANTHROPIC_API_KEY: "" });
+    expect(env.ANTHROPIC_API_KEY).toBeUndefined();
+  });
+
   it("throws when DATABASE_URL is missing", () => {
     const { DATABASE_URL, ...rest } = validEnv;
     expect(() => loadEnv(rest)).toThrow(/DATABASE_URL/);
