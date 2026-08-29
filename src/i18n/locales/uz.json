@@ -4,6 +4,7 @@
   "start.commandDescription": "Botni ishga tushirish",
   "help.text": "Bu bot AI yordamida taqdimot (.pptx) yaratadi. \"🎨 Taqdimot yaratish\" tugmasini bosing va ko'rsatmalarga amal qiling.",
   "help.commandDescription": "Yordam",
+  "help.contactAdmin": "👤 Admin",
   "menu.createPresentation": "🎨 Taqdimot yaratish",
   "menu.adminPanel": "⚙️ Admin panel",
   "menu.back": "🔙 Orqaga",

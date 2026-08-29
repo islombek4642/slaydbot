@@ -4,7 +4,7 @@ import type { MyContext } from "./context";
 import { t } from "../i18n/t";
 import { createAccessControlMiddleware } from "./middlewares/accessControl";
 import { createStartHandler } from "./handlers/start";
-import { helpHandler } from "./handlers/help";
+import { createHelpHandler } from "./handlers/help";
 import { createAdminListEntryHandler, createAdminListCallbackHandler } from "./handlers/adminList";
 import { buildAdminMenuKeyboard } from "./keyboards/adminMenu";
 import { buildMainMenuKeyboard } from "./keyboards/mainMenu";
@@ -34,7 +34,7 @@ export function createBot(deps: BotDependencies): Bot<MyContext> {
   bot.use(accessControl);
 
   bot.command("start", createStartHandler(deps.superAdminId));
-  bot.command("help", helpHandler);
+  bot.command("help", createHelpHandler(deps.superAdminId));
 
   bot.hears(t("menu.createPresentation"), async (ctx) => {
     await ctx.conversation.enter("presentationWizard");
