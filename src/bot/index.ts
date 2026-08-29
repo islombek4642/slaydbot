@@ -33,7 +33,7 @@ export function createBot(deps: BotDependencies): Bot<MyContext> {
   const accessControl = createAccessControlMiddleware(deps.userRepository);
   bot.use(accessControl);
 
-  bot.command("start", createStartHandler(deps.userRepository, deps.superAdminId));
+  bot.command("start", createStartHandler(deps.superAdminId));
   bot.command("help", helpHandler);
 
   bot.hears(t("menu.createPresentation"), async (ctx) => {

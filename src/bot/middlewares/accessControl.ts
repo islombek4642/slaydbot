@@ -13,6 +13,10 @@ export function createAccessControlMiddleware(userRepository: UserRepository) {
       await ctx.reply(t("start.accessDenied"));
       return;
     }
+    await userRepository.updateProfile(BigInt(userId), {
+      username: ctx.from?.username,
+      firstName: ctx.from?.first_name,
+    });
     await next();
   };
 }
