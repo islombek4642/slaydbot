@@ -7,9 +7,9 @@ import {
 } from "../../../src/bot/keyboards/wizardKeyboards";
 
 describe("wizard keyboards", () => {
-  it("builds a button for every slide count option", () => {
+  it("builds a button for every slide count option plus an AI-decides option", () => {
     const data = buildSlideCountKeyboard().inline_keyboard.flat().map((b: any) => b.callback_data);
-    expect(data).toEqual(["slideCount:5", "slideCount:10", "slideCount:15", "slideCount:20"]);
+    expect(data).toEqual(["slideCount:5", "slideCount:10", "slideCount:15", "slideCount:20", "slideCount:auto"]);
   });
 
   it("builds a button for every language", () => {

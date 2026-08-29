@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   SLIDE_COUNT_OPTIONS,
+  SLIDE_COUNT_AUTO,
   PRESENTATION_LANGUAGES,
   THEME_NAMES,
   SANDBOX_TIMEOUT_MS,
@@ -10,6 +11,10 @@ import {
 describe("constants", () => {
   it("defines the expected slide count options", () => {
     expect(SLIDE_COUNT_OPTIONS).toEqual([5, 10, 15, 20]);
+  });
+
+  it("defines the AI-decides slide count sentinel", () => {
+    expect(SLIDE_COUNT_AUTO).toBe(-1);
   });
 
   it("defines uz, ru, en languages", () => {

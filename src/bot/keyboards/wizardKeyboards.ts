@@ -7,6 +7,7 @@ export function buildSlideCountKeyboard(): InlineKeyboard {
   for (const count of SLIDE_COUNT_OPTIONS) {
     keyboard.text(String(count), `slideCount:${count}`);
   }
+  keyboard.row().text(t("wizard.slideCountAuto"), "slideCount:auto");
   return keyboard;
 }
 

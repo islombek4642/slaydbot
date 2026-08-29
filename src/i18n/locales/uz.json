@@ -19,6 +19,7 @@
   "admin.listUsers.item": "{{index}}. {{name}} — ID: {{id}}",
   "wizard.askTopic": "Taqdimot mavzusini yozing:",
   "wizard.askSlideCount": "Nechta slayd bo'lsin?",
+  "wizard.slideCountAuto": "🤖 AI tanlasin",
   "wizard.askLanguage": "Taqdimot tilini tanlang:",
   "wizard.askTheme": "Dizayn uslubini tanlang:",
   "wizard.generating": "Tayyorlanmoqda, biroz kuting...",

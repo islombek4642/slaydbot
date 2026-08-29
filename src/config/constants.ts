@@ -1,6 +1,9 @@
 export const SLIDE_COUNT_OPTIONS = [5, 10, 15, 20] as const;
 export type SlideCountOption = (typeof SLIDE_COUNT_OPTIONS)[number];
 
+/** Sentinel meaning "let AI decide the slide count" (chosen as -1, not 0, to avoid reading as "zero slides"). */
+export const SLIDE_COUNT_AUTO = -1 as const;
+
 export const PRESENTATION_LANGUAGES = [
   { code: "uz", label: "O'zbek" },
   { code: "ru", label: "Rus" },

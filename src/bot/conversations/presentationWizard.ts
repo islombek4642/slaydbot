@@ -11,6 +11,7 @@ import {
 import { parseCallbackValue } from "./parsers";
 import type { PresentationService } from "../../services/presentationService";
 import type { ThemeName, PresentationLanguageCode } from "../../config/constants";
+import { SLIDE_COUNT_AUTO } from "../../config/constants";
 
 export function createPresentationWizard(presentationService: PresentationService) {
   return async function presentationWizard(conversation: Conversation<MyContext>, ctx: Context): Promise<void> {
@@ -26,7 +27,8 @@ export function createPresentationWizard(presentationService: PresentationServic
     await ctx.reply(t("wizard.askSlideCount"), { reply_markup: buildSlideCountKeyboard() });
     const slideCountCtx = await conversation.waitFor("callback_query:data");
     await slideCountCtx.answerCallbackQuery();
-    const slideCount = Number(parseCallbackValue(slideCountCtx.callbackQuery.data, "slideCount"));
+    const slideCountValue = parseCallbackValue(slideCountCtx.callbackQuery.data, "slideCount");
+    const slideCount = slideCountValue === "auto" ? SLIDE_COUNT_AUTO : Number(slideCountValue);
 
     await ctx.reply(t("wizard.askLanguage"), { reply_markup: buildLanguageKeyboard() });
     const languageCtx = await conversation.waitFor("callback_query:data");
