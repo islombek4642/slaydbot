@@ -11,29 +11,34 @@ export function buildSlideCountKeyboard(): Keyboard {
   for (const count of SLIDE_COUNT_OPTIONS) {
     keyboard.text(String(count));
   }
-  keyboard.row().text(t("wizard.slideCountAuto")).row();
-  keyboard.text(t("wizard.cancel"));
+  keyboard.row().text(t("wizard.slideCountAuto")).text(t("wizard.cancel"));
   return keyboard.resized();
 }
 
 export function buildLanguageKeyboard(): Keyboard {
   const keyboard = new Keyboard();
-  for (const lang of PRESENTATION_LANGUAGES) {
-    keyboard.text(lang.label).row();
-  }
+  PRESENTATION_LANGUAGES.forEach((lang, index) => {
+    keyboard.text(lang.label);
+    if (index % 2 === 1) {
+      keyboard.row();
+    }
+  });
   keyboard.text(t("wizard.cancel"));
   return keyboard.resized();
 }
 
 export function buildThemeKeyboard(): Keyboard {
   const keyboard = new Keyboard();
-  for (const themeName of THEME_NAMES) {
-    keyboard.text(THEME_LABELS[themeName]).row();
-  }
+  THEME_NAMES.forEach((themeName, index) => {
+    keyboard.text(THEME_LABELS[themeName]);
+    if (index % 2 === 1) {
+      keyboard.row();
+    }
+  });
   keyboard.text(t("wizard.cancel"));
   return keyboard.resized();
 }
 
 export function buildConfirmKeyboard(): Keyboard {
-  return new Keyboard().text(t("wizard.confirm.yes")).row().text(t("wizard.cancel")).resized();
+  return new Keyboard().text(t("wizard.confirm.yes")).text(t("wizard.cancel")).resized();
 }

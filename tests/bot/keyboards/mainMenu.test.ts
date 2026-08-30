@@ -13,4 +13,11 @@ describe("buildMainMenuKeyboard", () => {
     const texts = keyboard.keyboard.flat().map((btn: any) => btn.text);
     expect(texts).toEqual(["🎨 Taqdimot yaratish", "⚙️ Admin panel"]);
   });
+
+  it("puts both buttons on the same row for admins", () => {
+    const keyboard = buildMainMenuKeyboard(true);
+    expect(keyboard.keyboard).toEqual([
+      [{ text: "🎨 Taqdimot yaratish" }, { text: "⚙️ Admin panel" }],
+    ]);
+  });
 });

@@ -7,4 +7,9 @@ describe("buildAdminListMenuKeyboard", () => {
     const texts = keyboard.keyboard.flat().map((btn: any) => btn.text);
     expect(texts).toEqual(["➕ Admin qo'shish", "🔙 Orqaga"]);
   });
+
+  it("puts both buttons on the same row", () => {
+    const keyboard = buildAdminListMenuKeyboard();
+    expect(keyboard.keyboard).toEqual([[{ text: "➕ Admin qo'shish" }, { text: "🔙 Orqaga" }]]);
+  });
 });

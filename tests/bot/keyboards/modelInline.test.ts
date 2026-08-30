@@ -16,4 +16,10 @@ describe("buildModelInlineKeyboard", () => {
     const buttons = keyboard.inline_keyboard.flat().map((b: any) => b.text);
     expect(buttons).toEqual(["Sonnet 5", "✅ Opus 5"]);
   });
+
+  it("puts both models on the same row", () => {
+    const keyboard = buildModelInlineKeyboard("claude-sonnet-5");
+    expect(keyboard.inline_keyboard).toHaveLength(1);
+    expect(keyboard.inline_keyboard[0]).toHaveLength(2);
+  });
 });
