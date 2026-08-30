@@ -37,3 +37,16 @@ export const AI_MODELS = [
 export type AiModelId = (typeof AI_MODELS)[number]["id"];
 export const DEFAULT_AI_MODEL: AiModelId = "claude-sonnet-5";
 export const AI_MODEL_SETTING_KEY = "aiModel";
+
+/** DPI for the .pptx -> JPEG slide renders used for visual QA. */
+export const SLIDE_RENDER_DPI = 150;
+/** Per-command (soffice / pdftoppm) timeout, so a wedged LibreOffice process can't hang a request forever. */
+export const RENDER_TIMEOUT_MS = 60_000;
+
+/**
+ * Safety ceiling on generate-render-review rounds per presentation, not a
+ * product limit - there is no target attempt count yet. generate() logs
+ * every attempt (requestId, attempt number, what failed) specifically so
+ * real usage data can inform what this should actually be set to later.
+ */
+export const MAX_GENERATION_ATTEMPTS = 10;

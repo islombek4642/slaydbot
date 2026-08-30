@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { PresentationService } from "../../src/services/presentationService";
 
-function createMockAiClient(code: string) {
+function createMockAiClient(code: string, reviewResult: { issues: string[] } = { issues: [] }) {
   return {
     generateSlideCode: vi.fn().mockResolvedValue(code),
+    reviewSlides: vi.fn().mockResolvedValue(reviewResult),
     getModel: vi.fn().mockReturnValue("claude-sonnet-5"),
     setModel: vi.fn(),
   } as any;
@@ -25,11 +26,13 @@ function createMockLogger() {
   return { info: vi.fn(), error: vi.fn(), warn: vi.fn() } as any;
 }
 
+const stubRenderSlides = () => Promise.resolve([]); // renderSlides stub: no images -> reviewSlides still gets called with []
+
 describe("PresentationService.generate", () => {
   it("returns a pptx buffer on success and marks the record successful", async () => {
     const aiClient = createMockAiClient('const s = addSlide(); addText(s, "Salom");');
     const repo = createMockPresentationRepository();
-    const service = new PresentationService(aiClient, repo, createMockIconCache());
+    const service = new PresentationService(aiClient, repo, createMockIconCache(), createMockLogger(), stubRenderSlides);
 
     const result = await service.generate({
       userId: 1n,
@@ -55,7 +58,7 @@ describe("PresentationService.generate", () => {
     `;
     const aiClient = createMockAiClient(code);
     const repo = createMockPresentationRepository();
-    const service = new PresentationService(aiClient, repo, createMockIconCache());
+    const service = new PresentationService(aiClient, repo, createMockIconCache(), createMockLogger(), stubRenderSlides);
 
     const result = await service.generate({
       userId: 1n,
@@ -70,10 +73,17 @@ describe("PresentationService.generate", () => {
     expect(repo.markFailed).not.toHaveBeenCalled();
   });
 
-  it("fails and records the reason when generated code trips the validator", async () => {
+  it("fails and records the reason when generated code trips the validator on every attempt", async () => {
     const aiClient = createMockAiClient("require('fs');");
     const repo = createMockPresentationRepository();
-    const service = new PresentationService(aiClient, repo, createMockIconCache());
+    const service = new PresentationService(
+      aiClient,
+      repo,
+      createMockIconCache(),
+      createMockLogger(),
+      stubRenderSlides,
+      2 // maxAttempts, kept small so the test doesn't spend 10 rounds on a fixed failure
+    );
 
     const result = await service.generate({
       userId: 1n,
@@ -87,12 +97,20 @@ describe("PresentationService.generate", () => {
     expect(result.requestId).toEqual(expect.any(String));
     expect(result.errorMessage).toMatch(/banned pattern/);
     expect(repo.markFailed).toHaveBeenCalledWith("pres_1", expect.stringContaining("banned pattern"));
+    expect(aiClient.generateSlideCode).toHaveBeenCalledTimes(2);
   });
 
-  it("fails and records the reason when the sandboxed code throws", async () => {
+  it("fails and records the reason when the sandboxed code throws on every attempt", async () => {
     const aiClient = createMockAiClient("throw new Error('bad code');");
     const repo = createMockPresentationRepository();
-    const service = new PresentationService(aiClient, repo, createMockIconCache());
+    const service = new PresentationService(
+      aiClient,
+      repo,
+      createMockIconCache(),
+      createMockLogger(),
+      stubRenderSlides,
+      2
+    );
 
     const result = await service.generate({
       userId: 1n,
@@ -105,13 +123,109 @@ describe("PresentationService.generate", () => {
     expect(result.success).toBe(false);
     expect(result.requestId).toEqual(expect.any(String));
     expect(result.errorMessage).toContain("bad code");
+    expect(aiClient.generateSlideCode).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries with feedback after a validation failure, then succeeds", async () => {
+    const aiClient = createMockAiClient("require('fs');");
+    aiClient.generateSlideCode
+      .mockResolvedValueOnce("require('fs');")
+      .mockResolvedValueOnce('const s = addSlide(); addText(s, "Salom");');
+    const repo = createMockPresentationRepository();
+    const service = new PresentationService(aiClient, repo, createMockIconCache(), createMockLogger(), stubRenderSlides);
+
+    const result = await service.generate({
+      userId: 1n,
+      topic: "Test",
+      slideCount: 1,
+      language: "o'zbek",
+      themeName: "corporate",
+    });
+
+    expect(result.success).toBe(true);
+    expect(aiClient.generateSlideCode).toHaveBeenCalledTimes(2);
+    const secondCallArgs = aiClient.generateSlideCode.mock.calls[1][0];
+    expect(secondCallArgs.previousAttempt).toEqual({
+      code: "require('fs');",
+      feedback: expect.stringContaining("banned pattern"),
+    });
+  });
+
+  it("retries with the visual QA issues as feedback, then succeeds once QA passes", async () => {
+    const code = 'const s = addSlide(); addText(s, "Salom");';
+    const aiClient = createMockAiClient(code);
+    aiClient.reviewSlides
+      .mockResolvedValueOnce({ issues: ["1-slaydda matn chiqib ketgan"] })
+      .mockResolvedValueOnce({ issues: [] });
+    const repo = createMockPresentationRepository();
+    const renderSlides = vi.fn().mockResolvedValue([Buffer.from("fake-jpeg")]);
+    const service = new PresentationService(aiClient, repo, createMockIconCache(), createMockLogger(), renderSlides);
+
+    const result = await service.generate({
+      userId: 1n,
+      topic: "Test",
+      slideCount: 1,
+      language: "o'zbek",
+      themeName: "corporate",
+    });
+
+    expect(result.success).toBe(true);
+    expect(aiClient.generateSlideCode).toHaveBeenCalledTimes(2);
+    expect(aiClient.reviewSlides).toHaveBeenCalledTimes(2);
+    const secondCallArgs = aiClient.generateSlideCode.mock.calls[1][0];
+    expect(secondCallArgs.previousAttempt.feedback).toContain("1-slaydda matn chiqib ketgan");
+  });
+
+  it("delivers the last valid buffer (not a failure) when the attempt cap is hit with lingering QA issues", async () => {
+    const code = 'const s = addSlide(); addText(s, "Salom");';
+    const aiClient = createMockAiClient(code, { issues: ["hech qachon tuzatilmaydigan muammo"] });
+    const repo = createMockPresentationRepository();
+    const renderSlides = vi.fn().mockResolvedValue([Buffer.from("fake-jpeg")]);
+    const logger = createMockLogger();
+    const service = new PresentationService(aiClient, repo, createMockIconCache(), logger, renderSlides, 3);
+
+    const result = await service.generate({
+      userId: 1n,
+      topic: "Test",
+      slideCount: 1,
+      language: "o'zbek",
+      themeName: "corporate",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.buffer).toBeInstanceOf(Buffer);
+    expect(aiClient.generateSlideCode).toHaveBeenCalledTimes(3);
+    expect(repo.markSuccess).toHaveBeenCalledWith("pres_1");
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ attempts: 3 }),
+      expect.stringContaining("attempt cap")
+    );
+  });
+
+  it("accepts the attempt as-is when rendering for visual QA fails (graceful degradation)", async () => {
+    const code = 'const s = addSlide(); addText(s, "Salom");';
+    const aiClient = createMockAiClient(code);
+    const repo = createMockPresentationRepository();
+    const renderSlides = vi.fn().mockRejectedValue(new Error("soffice not found"));
+    const service = new PresentationService(aiClient, repo, createMockIconCache(), createMockLogger(), renderSlides);
+
+    const result = await service.generate({
+      userId: 1n,
+      topic: "Test",
+      slideCount: 1,
+      language: "o'zbek",
+      themeName: "corporate",
+    });
+
+    expect(result.success).toBe(true);
+    expect(aiClient.reviewSlides).not.toHaveBeenCalled();
   });
 
   it("resolves with success:false and does not call markFailed when create() itself throws", async () => {
     const aiClient = createMockAiClient('const s = addSlide(); addText(s, "Salom");');
     const repo = createMockPresentationRepository();
     repo.create = vi.fn().mockRejectedValue(new Error("db down"));
-    const service = new PresentationService(aiClient, repo, createMockIconCache());
+    const service = new PresentationService(aiClient, repo, createMockIconCache(), createMockLogger(), stubRenderSlides);
 
     const result = await service.generate({
       userId: 1n,
@@ -133,7 +247,7 @@ describe("PresentationService.generate", () => {
     const aiClient = createMockAiClient('const s = addSlide(); addText(s, "Salom");');
     const repo = createMockPresentationRepository();
     const logger = createMockLogger();
-    const service = new PresentationService(aiClient, repo, createMockIconCache(), logger);
+    const service = new PresentationService(aiClient, repo, createMockIconCache(), logger, stubRenderSlides);
 
     const result = await service.generate({
       userId: 1n,
@@ -192,7 +306,7 @@ describe("PresentationService.generate", () => {
     const aiClient = createMockAiClient("throw new Error('bad code');");
     const repo = createMockPresentationRepository();
     const logger = createMockLogger();
-    const service = new PresentationService(aiClient, repo, createMockIconCache(), logger);
+    const service = new PresentationService(aiClient, repo, createMockIconCache(), logger, stubRenderSlides, 1);
 
     const result = await service.generate({
       userId: 1n,

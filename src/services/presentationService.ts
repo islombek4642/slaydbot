@@ -1,12 +1,13 @@
 import { randomUUID } from "node:crypto";
-import type { AiClient } from "../ai/client";
+import type { AiClient, PreviousAttempt } from "../ai/client";
 import { validateGeneratedCode } from "../ai/codeValidator";
 import { runInSandbox } from "../pptx/sandbox";
 import { PresentationBuilder } from "../pptx/presentationBuilder";
 import { createBridgeFunctions } from "../pptx/bridge";
 import { IconCache } from "../pptx/icons/iconCache";
 import { getTheme } from "../pptx/themes";
-import type { ThemeName } from "../config/constants";
+import { renderSlidesToImages } from "../pptx/render";
+import { MAX_GENERATION_ATTEMPTS, type ThemeName } from "../config/constants";
 import type { PresentationRepository } from "../db/repositories/presentationRepository";
 import { createLogger, type Logger } from "../logger";
 
@@ -25,12 +26,16 @@ export interface GeneratePresentationResult {
   errorMessage?: string;
 }
 
+export type RenderSlidesFn = (buffer: Buffer) => Promise<Buffer[]>;
+
 export class PresentationService {
   constructor(
     private readonly aiClient: AiClient | null,
     private readonly presentationRepository: PresentationRepository,
     private readonly iconCache: IconCache = new IconCache(),
-    private readonly logger: Logger = createLogger()
+    private readonly logger: Logger = createLogger(),
+    private readonly renderSlides: RenderSlidesFn = renderSlidesToImages,
+    private readonly maxAttempts: number = MAX_GENERATION_ATTEMPTS
   ) {}
 
   getModel(): string | null {
@@ -69,32 +74,78 @@ export class PresentationService {
       if (!this.aiClient) {
         throw new Error("ANTHROPIC_API_KEY is not configured; AI-based presentation generation is unavailable");
       }
-
-      const code = await this.aiClient.generateSlideCode({
-        topic: input.topic,
-        slideCount: input.slideCount,
-        language: input.language,
-        theme,
-      });
-
-      const validation = validateGeneratedCode(code);
-      if (!validation.valid) {
-        throw new Error(validation.reason ?? "Generated code failed validation");
-      }
+      const aiClient = this.aiClient;
 
       await this.iconCache.warmTheme(theme);
 
-      const builder = new PresentationBuilder();
-      const bridge = createBridgeFunctions(builder, this.iconCache);
-      const sandboxResult = await runInSandbox(code, bridge);
-      if (!sandboxResult.success) {
-        throw new Error(sandboxResult.error ?? "Sandbox execution failed");
+      let previousAttempt: PreviousAttempt | undefined;
+      let lastGoodBuffer: Buffer | undefined;
+
+      for (let attempt = 1; attempt <= this.maxAttempts; attempt++) {
+        this.logger.info({ requestId, attempt }, "Generation attempt");
+
+        const code = await aiClient.generateSlideCode({
+          topic: input.topic,
+          slideCount: input.slideCount,
+          language: input.language,
+          theme,
+          previousAttempt,
+        });
+
+        const validation = validateGeneratedCode(code);
+        if (!validation.valid) {
+          const feedback = validation.reason ?? "Kod statik tekshiruvdan o'tmadi";
+          this.logger.warn({ requestId, attempt, reason: feedback }, "Static validation failed, retrying");
+          previousAttempt = { code, feedback };
+          continue;
+        }
+
+        const builder = new PresentationBuilder();
+        const bridge = createBridgeFunctions(builder, this.iconCache);
+        const sandboxResult = await runInSandbox(code, bridge);
+        if (!sandboxResult.success) {
+          const feedback = sandboxResult.error ?? "Sandbox execution failed";
+          this.logger.warn({ requestId, attempt, error: feedback }, "Sandbox execution failed, retrying");
+          previousAttempt = { code, feedback };
+          continue;
+        }
+
+        const buffer = await builder.toBuffer();
+        lastGoodBuffer = buffer;
+
+        let issues: string[] = [];
+        try {
+          const images = await this.renderSlides(buffer);
+          issues = (await aiClient.reviewSlides(images)).issues;
+        } catch (qaError) {
+          const message = qaError instanceof Error ? qaError.message : String(qaError);
+          this.logger.warn({ requestId, attempt, error: message }, "Visual QA could not run, accepting this attempt as-is");
+        }
+
+        if (issues.length === 0) {
+          await this.presentationRepository.markSuccess(recordId);
+          this.logger.info({ requestId, recordId, attempts: attempt }, "Presentation generation succeeded");
+          return { success: true, requestId, buffer };
+        }
+
+        this.logger.warn({ requestId, attempt, issues }, "Visual QA found issues, regenerating");
+        previousAttempt = { code, feedback: issues.map((issue, i) => `${i + 1}. ${issue}`).join("\n") };
       }
 
-      const buffer = await builder.toBuffer();
-      await this.presentationRepository.markSuccess(recordId);
-      this.logger.info({ requestId, recordId }, "Presentation generation succeeded");
-      return { success: true, requestId, buffer };
+      if (lastGoodBuffer) {
+        await this.presentationRepository.markSuccess(recordId);
+        this.logger.warn(
+          { requestId, recordId, attempts: this.maxAttempts },
+          "Hit the generation attempt cap with lingering visual QA issues; delivering the last valid attempt"
+        );
+        return { success: true, requestId, buffer: lastGoodBuffer };
+      }
+
+      throw new Error(
+        `${this.maxAttempts} urinishdan keyin ham yaroqli kod yaratib bo'lmadi. Oxirgi xatolik: ${
+          previousAttempt?.feedback ?? "noma'lum"
+        }`
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (recordId) {

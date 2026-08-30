@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AiClient, extractCodeBlock } from "../../src/ai/client";
+import { AiClient, extractCodeBlock, parseVisualQaResult } from "../../src/ai/client";
 
 const createMock = vi.fn();
 
@@ -189,5 +189,76 @@ describe("AiClient.generateSlideCode", () => {
       expect(delayMock).toHaveBeenNthCalledWith(1, 1000);
       expect(delayMock).toHaveBeenNthCalledWith(2, 2000);
     });
+  });
+
+  it("includes the previous code and feedback when revising a failed attempt", async () => {
+    createMock.mockResolvedValue({
+      content: [{ type: "text", text: "```javascript\naddSlide();\n```" }],
+    });
+    const client = new AiClient("test-key", "claude-opus-4-5");
+    await client.generateSlideCode({
+      topic: "Test",
+      slideCount: 5,
+      language: "uz",
+      theme,
+      previousAttempt: { code: "addSlide()", feedback: "3-slaydda matn chiqib ketgan" },
+    });
+    const [[callArgs]] = createMock.mock.calls;
+    expect(callArgs.messages[0].content).toContain("addSlide()");
+    expect(callArgs.messages[0].content).toContain("3-slaydda matn chiqib ketgan");
+  });
+});
+
+describe("AiClient.reviewSlides", () => {
+  beforeEach(() => {
+    createMock.mockReset();
+  });
+
+  it("sends each image as a base64 content block and returns the parsed issues", async () => {
+    createMock.mockResolvedValue({
+      content: [{ type: "text", text: '{"issues": ["1-slaydda matn chiqib ketgan"]}' }],
+    });
+    const client = new AiClient("test-key", "claude-opus-4-5");
+    const result = await client.reviewSlides([Buffer.from("fake-jpeg-bytes")]);
+
+    expect(result.issues).toEqual(["1-slaydda matn chiqib ketgan"]);
+    const [[callArgs]] = createMock.mock.calls;
+    const imageBlock = callArgs.messages[0].content.find((block: any) => block.type === "image");
+    expect(imageBlock.source).toEqual({
+      type: "base64",
+      media_type: "image/jpeg",
+      data: Buffer.from("fake-jpeg-bytes").toString("base64"),
+    });
+  });
+
+  it("returns an empty issues array when the deck passes QA", async () => {
+    createMock.mockResolvedValue({ content: [{ type: "text", text: '{"issues": []}' }] });
+    const client = new AiClient("test-key", "claude-opus-4-5");
+    const result = await client.reviewSlides([Buffer.from("x")]);
+    expect(result.issues).toEqual([]);
+  });
+
+  it("throws when Claude returns no text block", async () => {
+    createMock.mockResolvedValue({ content: [] });
+    const client = new AiClient("test-key", "claude-opus-4-5");
+    await expect(client.reviewSlides([Buffer.from("x")])).rejects.toThrow(/did not return a text response/);
+  });
+});
+
+describe("parseVisualQaResult", () => {
+  it("parses a bare JSON response", () => {
+    expect(parseVisualQaResult('{"issues": ["a", "b"]}')).toEqual({ issues: ["a", "b"] });
+  });
+
+  it("parses a JSON response wrapped in a markdown fence", () => {
+    expect(parseVisualQaResult('```json\n{"issues": []}\n```')).toEqual({ issues: [] });
+  });
+
+  it("throws on invalid JSON", () => {
+    expect(() => parseVisualQaResult("not json")).toThrow(/not valid JSON/);
+  });
+
+  it("throws when the shape doesn't match { issues: string[] }", () => {
+    expect(() => parseVisualQaResult('{"problems": ["a"]}')).toThrow(/expected/);
   });
 });

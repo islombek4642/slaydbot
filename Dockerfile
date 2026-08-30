@@ -30,7 +30,10 @@ FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+# libreoffice-impress (not the full `libreoffice` metapackage) + poppler-utils
+# are only for visual QA (src/pptx/render.ts): .pptx -> PDF -> per-slide JPEG,
+# so a generated deck's own AI can look at what it actually built.
+RUN apt-get update && apt-get install -y --no-install-recommends curl libreoffice-impress poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # node:20-slim already ships a non-root "node" user (uid/gid 1000) -

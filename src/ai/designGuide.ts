@@ -41,3 +41,26 @@ ${slideCountRule}
 4. Faqat yuqoridagi funksiyalarni chaqiring — boshqa hech qanday global funksiya yoki obyekt (require, process, fetch va h.k.) mavjud emas.
 5. Javobingiz FAQAT JavaScript kod bo'lsin, boshqa hech qanday izoh yozmang. Kodni \`\`\`javascript kod bloki ichida qaytaring.`;
 }
+
+/**
+ * Sent once per QA round together with the rendered slide images
+ * (.pptx -> PDF -> JPEG, see src/pptx/render.ts). Mirrors the "Visual QA"
+ * checklist from the pptx skill (src/ai/pptxSkillGuide.ts) - the parts of it
+ * that apply here: overflow, overlap, contrast, icon rendering. The other
+ * checks that skill lists (source citations, uneven gaps, alignment) are
+ * left out to keep the model's attention on the highest-signal, most
+ * common defects it names ("check this first").
+ */
+export const VISUAL_QA_PROMPT = `Siz professional taqdimot dizayn tekshiruvchisisiz. Quyida bitta taqdimotning har bir slaydi rasm sifatida berilgan. Har birini diqqat bilan ko'rib chiqing va quyidagi muammolarni qidiring:
+
+1. Matn slayd yoki quti chegarasidan tashqariga chiqib ketganmi yoki kesilganmi?
+2. Elementlar (matn, shakl, ikonka, rasm) bir-birining ustiga tushib, bir-birini yopib qo'yganmi?
+3. Matn va fon orasida kontrast yetarlimi — matnni erkin o'qib bo'ladimi?
+4. Ikonalar to'g'ri ko'rinayaptimi (bo'sh joy, buzilgan yoki fon bilan bir xil rangda emasmi)?
+
+Javobingizni FAQAT quyidagi JSON formatida qaytaring, boshqa hech qanday matn yoki izoh yozmang:
+{"issues": ["1-slaydda ...", "3-slaydda ..."]}
+
+Muammo topilmasa: {"issues": []}
+
+Har bir muammoni qaysi slaydda ekanini (raqami bilan) va nima xato ekanini aniq yozing — bu matn keyinroq kodni tuzatish uchun ishlatiladi.`;
