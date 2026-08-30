@@ -47,6 +47,26 @@ describe("createBridgeFunctions", () => {
     expect(addNotesSpy).toHaveBeenCalledWith(0, "eslatma");
   });
 
+  it("addImage delegates to the builder when only data is given", () => {
+    const builder = new PresentationBuilder();
+    const addImageSpy = vi.spyOn(builder, "addImage");
+    const bridge = createBridgeFunctions(builder, new IconCache());
+    bridge.addSlide();
+    bridge.addImage(0, { data: "data:image/png;base64,AAAA", x: 0, y: 0, w: 1, h: 1 });
+    expect(addImageSpy).toHaveBeenCalledWith(0, { data: "data:image/png;base64,AAAA", x: 0, y: 0, w: 1, h: 1 });
+  });
+
+  it("addImage rejects a path (would fetch a URL or read a local file on the host)", () => {
+    const builder = new PresentationBuilder();
+    const addImageSpy = vi.spyOn(builder, "addImage");
+    const bridge = createBridgeFunctions(builder, new IconCache());
+    bridge.addSlide();
+    expect(() => bridge.addImage(0, { path: "http://attacker.example/x", x: 0, y: 0, w: 1, h: 1 })).toThrow(
+      /"path" is not allowed/
+    );
+    expect(addImageSpy).not.toHaveBeenCalled();
+  });
+
   it("addIcon throws when the icon/color combo is not cached", () => {
     const builder = new PresentationBuilder();
     const bridge = createBridgeFunctions(builder, new IconCache());

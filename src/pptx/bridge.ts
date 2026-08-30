@@ -19,7 +19,18 @@ export function createBridgeFunctions(builder: PresentationBuilder, iconCache: I
     addText: (slideIndex: number, text: string, options: PptxGenJS.TextPropsOptions = {}) =>
       builder.addText(slideIndex, text, options),
 
-    addImage: (slideIndex: number, options: PptxGenJS.ImageProps) => builder.addImage(slideIndex, options),
+    addImage: (slideIndex: number, options: PptxGenJS.ImageProps) => {
+      // pptxgenjs fetches `path` (a URL or local filesystem path) for real,
+      // on the host, while building the deck - unlike every other option
+      // here, which only ever gets written into the .pptx's XML. Exposing it
+      // would let generated code make the server issue arbitrary outbound
+      // requests (SSRF) or read local files. `data` (a base64 data URI) is
+      // the only way to supply an image.
+      if (options.path !== undefined) {
+        throw new Error('addImage: "path" is not allowed (no network/filesystem access) - use "data" instead');
+      }
+      builder.addImage(slideIndex, options);
+    },
 
     addChart: (
       slideIndex: number,
