@@ -17,6 +17,7 @@ import {
   formatSlideCount,
   formatLanguage,
   formatTheme,
+  isCommandText,
 } from "./parsers";
 import { isSuperAdmin } from "../superAdmin";
 import type { PresentationService } from "../../services/presentationService";
@@ -33,7 +34,7 @@ async function waitForSelection<T>(
   for (;;) {
     const msgCtx = await conversation.waitFor("message:text");
     const text = msgCtx.message.text;
-    if (text === t("wizard.cancel")) {
+    if (text === t("wizard.cancel") || isCommandText(text)) {
       return { cancelled: true };
     }
     const value = parse(text);
@@ -51,7 +52,7 @@ export function createPresentationWizard(presentationService: PresentationServic
 
     await ctx.reply(t("wizard.askTopic"), { reply_markup: buildCancelKeyboard() });
     const topicCtx = await conversation.waitFor("message:text");
-    if (topicCtx.message.text === t("wizard.cancel")) {
+    if (topicCtx.message.text === t("wizard.cancel") || isCommandText(topicCtx.message.text)) {
       await topicCtx.reply(t("wizard.cancelled"), { reply_markup: mainMenuFor(topicCtx) });
       return;
     }

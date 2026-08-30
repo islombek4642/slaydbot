@@ -2,7 +2,7 @@ import type { Context } from "grammy";
 import type { Conversation } from "@grammyjs/conversations";
 import type { MyContext } from "../context";
 import { t } from "../../i18n/t";
-import { parseTelegramId } from "./parsers";
+import { parseTelegramId, isCommandText } from "./parsers";
 import { buildCancelKeyboard } from "../keyboards/wizardKeyboards";
 import { buildAdminListMenuKeyboard } from "../keyboards/adminListMenu";
 import type { UserProfile, UserRepository } from "../../db/repositories/userRepository";
@@ -14,7 +14,10 @@ export function createAdminAddUserConversation(userRepository: UserRepository) {
     for (;;) {
       const idCtx = await conversation.waitFor(["message:text", "message:forward_origin"]);
 
-      if (idCtx.has("message:text") && idCtx.message.text === t("wizard.cancel")) {
+      if (
+        idCtx.has("message:text") &&
+        (idCtx.message.text === t("wizard.cancel") || isCommandText(idCtx.message.text))
+      ) {
         await idCtx.reply(t("wizard.cancelled"), { reply_markup: buildAdminListMenuKeyboard() });
         return;
       }

@@ -37,6 +37,19 @@ export function formatTheme(themeName: ThemeName): string {
   return THEME_LABELS[themeName];
 }
 
+/**
+ * Whether `text` looks like a Telegram command (e.g. "/start", "/help").
+ *
+ * Conversations intercept every "message:text" update while they're waiting,
+ * including commands - without this check, typing "/start" to escape a stuck
+ * step gets silently absorbed as literal input (a topic, a bad slide count,
+ * ...) instead of ever reaching bot.command(). Treating it the same as the
+ * cancel button gives the user a way out.
+ */
+export function isCommandText(text: string): boolean {
+  return text.startsWith("/");
+}
+
 export function parseTelegramId(text: string): bigint {
   const trimmed = text.trim();
   if (!/^\d+$/.test(trimmed)) {

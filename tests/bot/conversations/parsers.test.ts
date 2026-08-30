@@ -6,6 +6,7 @@ import {
   formatSlideCount,
   formatLanguage,
   formatTheme,
+  isCommandText,
   parseTelegramId,
 } from "../../../src/bot/conversations/parsers";
 import { SLIDE_COUNT_AUTO } from "../../../src/config/constants";
@@ -72,6 +73,18 @@ describe("formatTheme", () => {
   it("formats a theme name as its label", () => {
     expect(formatTheme("corporate")).toBe("Corporate");
     expect(formatTheme("dark")).toBe("Dark");
+  });
+});
+
+describe("isCommandText", () => {
+  it("returns true for a slash command", () => {
+    expect(isCommandText("/start")).toBe(true);
+    expect(isCommandText("/help")).toBe(true);
+  });
+
+  it("returns false for ordinary text", () => {
+    expect(isCommandText("Sun'iy intellekt")).toBe(false);
+    expect(isCommandText("10")).toBe(false);
   });
 });
 
