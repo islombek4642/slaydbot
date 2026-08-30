@@ -23,6 +23,9 @@ export const THEME_LABELS: Record<ThemeName, string> = {
 export const SANDBOX_TIMEOUT_MS = 5000;
 export const SANDBOX_MEMORY_LIMIT_MB = 128;
 
+/** Idle limit for a paused conversation (wizard, add-admin) before its next reply is treated as stale and falls back to the main menu instead of resuming. */
+export const CONVERSATION_TIMEOUT_MS = 10 * 60 * 1000;
+
 export const AI_MODELS = [
   { id: "claude-sonnet-5", label: "Sonnet 5" },
   { id: "claude-opus-5", label: "Opus 5" },

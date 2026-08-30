@@ -12,6 +12,7 @@ import { buildMainMenuKeyboard } from "./keyboards/mainMenu";
 import { createPresentationWizard } from "./conversations/presentationWizard";
 import { createAdminAddUserConversation } from "./conversations/adminAddUser";
 import { isSuperAdmin } from "./superAdmin";
+import { CONVERSATION_TIMEOUT_MS } from "../config/constants";
 import type { UserRepository } from "../db/repositories/userRepository";
 import type { SettingRepository } from "../db/repositories/settingRepository";
 import type { PresentationService } from "../services/presentationService";
@@ -31,9 +32,17 @@ export function createBot(deps: BotDependencies): Bot<MyContext> {
   // default); it does not require grammY's core `session()` middleware.
   bot.use(conversations());
   bot.use(
-    createConversation(createPresentationWizard(deps.presentationService, deps.superAdminId), "presentationWizard")
+    createConversation(createPresentationWizard(deps.presentationService, deps.superAdminId), {
+      id: "presentationWizard",
+      maxMillisecondsToWait: CONVERSATION_TIMEOUT_MS,
+    })
   );
-  bot.use(createConversation(createAdminAddUserConversation(deps.userRepository), "adminAddUser"));
+  bot.use(
+    createConversation(createAdminAddUserConversation(deps.userRepository), {
+      id: "adminAddUser",
+      maxMillisecondsToWait: CONVERSATION_TIMEOUT_MS,
+    })
+  );
 
   const accessControl = createAccessControlMiddleware(deps.userRepository);
   bot.use(accessControl);
