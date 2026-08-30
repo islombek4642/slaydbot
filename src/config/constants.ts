@@ -23,6 +23,10 @@ export const THEME_LABELS: Record<ThemeName, string> = {
 export const SANDBOX_TIMEOUT_MS = 5000;
 export const SANDBOX_MEMORY_LIMIT_MB = 128;
 
+/** Widescreen deck canvas (pptxgenjs "LAYOUT_WIDE") - the AI is told these exact dimensions so its x/y/w/h coordinates land inside the slide. */
+export const CANVAS_WIDTH_IN = 13.33;
+export const CANVAS_HEIGHT_IN = 7.5;
+
 /** Idle limit for a paused conversation (wizard, add-admin) before its next reply is treated as stale and falls back to the main menu instead of resuming. */
 export const CONVERSATION_TIMEOUT_MS = 10 * 60 * 1000;
 

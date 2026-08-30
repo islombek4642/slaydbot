@@ -3,3 +3,9 @@ dist/
 .env
 backups/
 *.log
+
+# npx skills CLI artifacts (dev-time reference only; the relevant content
+# has been extracted into src/ai/pptxSkillGuide.ts)
+.agents/
+.claude/
+skills-lock.json

@@ -6,6 +6,10 @@ export class PresentationBuilder {
 
   constructor() {
     this.pptx = new PptxGenJS();
+    // pptxgenjs defaults to LAYOUT_16x9 (10" x 5.625"), not the 13.33" x 7.5"
+    // widescreen canvas the AI is told about in designGuide.ts - without this,
+    // coordinates the AI computes for a wide canvas would land off-slide.
+    this.pptx.layout = "LAYOUT_WIDE";
   }
 
   addSlide(): number {
