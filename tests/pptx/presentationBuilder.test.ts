@@ -29,4 +29,31 @@ describe("PresentationBuilder", () => {
     expect(buffer).toBeInstanceOf(Buffer);
     expect(buffer.length).toBeGreaterThan(0);
   });
+
+  it("sets a per-slide background color when requested", () => {
+    const builder = new PresentationBuilder();
+    const index = builder.addSlide({ background: "1F3864" });
+    expect(index).toBe(0);
+    expect(builder.slideCount()).toBe(1);
+  });
+
+  it("throws when adding a table to a non-existent slide", () => {
+    const builder = new PresentationBuilder();
+    expect(() => builder.addTable(0, [[{ text: "a" }]])).toThrow(/Slide index 0 does not exist/);
+  });
+
+  it("throws when adding notes to a non-existent slide", () => {
+    const builder = new PresentationBuilder();
+    expect(() => builder.addNotes(0, "eslatma")).toThrow(/Slide index 0 does not exist/);
+  });
+
+  it("produces a non-empty buffer for a deck using a table and notes", async () => {
+    const builder = new PresentationBuilder();
+    const index = builder.addSlide({ background: "1F3864" });
+    builder.addTable(index, [[{ text: "Ustun 1" }, { text: "Ustun 2" }]]);
+    builder.addNotes(index, "Taqdimotchi uchun izoh");
+    const buffer = await builder.toBuffer();
+    expect(buffer).toBeInstanceOf(Buffer);
+    expect(buffer.length).toBeGreaterThan(0);
+  });
 });

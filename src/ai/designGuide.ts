@@ -10,11 +10,13 @@ export function buildSystemPrompt(theme: Theme, slideCount: number, language: st
       : `1. Aniq ${slideCount} ta slayd yarating (${slideCount} marta addSlide() chaqiring).`;
   return `Siz professional taqdimot dizayneri sifatida ishlaysiz. Sizning vazifangiz — faqat JavaScript kod yozish, bu kod quyidagi funksiyalar orqali taqdimot slaydlarini yaratadi:
 
-- addSlide() -> number — yangi slayd qo'shadi, uning indeksini qaytaradi
+- addSlide(options?) -> number — yangi slayd qo'shadi, uning indeksini qaytaradi. options ixtiyoriy: { background } — slaydning fonini pastdagi tema ranglaridan biriga o'rnatadi (masalan sarlavha/xulosa slaydini to'q qilish uchun)
 - addText(slideIndex, text, options) — matn qo'shadi. options: { x, y, w, h, fontSize, fontFace, bold, color, align, valign, bullet, breakLine, charSpacing, paraSpaceAfter, margin }
 - addImage(slideIndex, options) — rasm qo'shadi. options: { data, x, y, w, h }
 - addChart(slideIndex, type, data, options) — diagram qo'shadi. type: "bar" | "line" | "pie" | "doughnut"
 - addShape(slideIndex, shapeType, options) — geometrik shakl qo'shadi. shapeType: "rect" | "roundRect" | "line" | "oval"
+- addTable(slideIndex, rows, options) — jadval qo'shadi. rows: [[{ text, options }, ...], ...] (har bir qator — kataklar massivi, har bir katak { text, options: { bold, color, fill, ... } })
+- addNotes(slideIndex, text) — slaydga faqat taqdimot beruvchi uchun ko'rinadigan izoh (speaker notes) qo'shadi
 - addIcon(slideIndex, iconName, options) — ikonka qo'shadi. options: { color, x, y, w, h }
 
 Slayd o'lchami: ${CANVAS_WIDTH_IN}" x ${CANVAS_HEIGHT_IN}" (16:9 widescreen). Barcha x/y/w/h shu diapazon ichida bo'lsin.
@@ -27,6 +29,8 @@ Ranglar faqat quyidagi tema qiymatlaridan olinsin (o'zingiz rang o'ylab topmang)
 - backgroundColor: ${theme.backgroundColor}
 - textColor: ${theme.textColor}
 - fontFace: "${theme.fontFace}" — har bir addText chaqiruvida options.fontFace ga shuni bering
+
+Sarlavha/xulosa slaydlarini to'q qilish uchun: addSlide({ background: "${theme.primaryColor}" }) chaqiring va o'sha slayddagi addText chaqiruvlarida color sifatida "${theme.backgroundColor}" (och rang) bering — aks holda matn o'qilmay qoladi.
 
 ${PPTX_SKILL_DESIGN_GUIDE}
 

@@ -23,7 +23,9 @@ describe("buildSystemPrompt", () => {
 
   it("lists the bridge functions and the curated icon names", () => {
     const prompt = buildSystemPrompt(corporateTheme, 5, "o'zbek");
-    expect(prompt).toContain("addSlide()");
+    expect(prompt).toContain("addSlide(options?)");
+    expect(prompt).toContain("addTable");
+    expect(prompt).toContain("addNotes");
     expect(prompt).toContain("addIcon");
     expect(prompt).toContain("FaChartBar");
   });

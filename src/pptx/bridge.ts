@@ -14,7 +14,7 @@ export type BridgeFunctions = Record<string, (...args: any[]) => any>;
 
 export function createBridgeFunctions(builder: PresentationBuilder, iconCache: IconCache): BridgeFunctions {
   return {
-    addSlide: () => builder.addSlide(),
+    addSlide: (options: { background?: string } = {}) => builder.addSlide(options),
 
     addText: (slideIndex: number, text: string, options: PptxGenJS.TextPropsOptions = {}) =>
       builder.addText(slideIndex, text, options),
@@ -30,6 +30,11 @@ export function createBridgeFunctions(builder: PresentationBuilder, iconCache: I
 
     addShape: (slideIndex: number, shapeType: PptxGenJS.SHAPE_NAME, options: PptxGenJS.ShapeProps = {}) =>
       builder.addShape(slideIndex, shapeType, options),
+
+    addTable: (slideIndex: number, rows: PptxGenJS.TableRow[], options: PptxGenJS.TableProps = {}) =>
+      builder.addTable(slideIndex, rows, options),
+
+    addNotes: (slideIndex: number, notes: string) => builder.addNotes(slideIndex, notes),
 
     addIcon: (slideIndex: number, iconName: string, options: AddIconOptions) => {
       const dataUri = iconCache.get(iconName, options.color);

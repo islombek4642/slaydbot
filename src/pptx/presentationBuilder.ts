@@ -12,8 +12,11 @@ export class PresentationBuilder {
     this.pptx.layout = "LAYOUT_WIDE";
   }
 
-  addSlide(): number {
+  addSlide(options: { background?: string } = {}): number {
     const slide = this.pptx.addSlide();
+    if (options.background) {
+      slide.background = { color: options.background };
+    }
     this.slides.push(slide);
     return this.slides.length - 1;
   }
@@ -43,6 +46,14 @@ export class PresentationBuilder {
     options: PptxGenJS.ShapeProps = {}
   ): void {
     this.getSlide(slideIndex).addShape(shapeType, { ...options });
+  }
+
+  addTable(slideIndex: number, rows: PptxGenJS.TableRow[], options: PptxGenJS.TableProps = {}): void {
+    this.getSlide(slideIndex).addTable(rows, { ...options });
+  }
+
+  addNotes(slideIndex: number, notes: string): void {
+    this.getSlide(slideIndex).addNotes(notes);
   }
 
   slideCount(): number {

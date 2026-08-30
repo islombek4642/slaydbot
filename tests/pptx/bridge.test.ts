@@ -11,6 +11,14 @@ describe("createBridgeFunctions", () => {
     expect(builder.slideCount()).toBe(1);
   });
 
+  it("addSlide passes options (e.g. background) through to the builder", () => {
+    const builder = new PresentationBuilder();
+    const addSlideSpy = vi.spyOn(builder, "addSlide");
+    const bridge = createBridgeFunctions(builder, new IconCache());
+    bridge.addSlide({ background: "1F3864" });
+    expect(addSlideSpy).toHaveBeenCalledWith({ background: "1F3864" });
+  });
+
   it("addText delegates to the builder", () => {
     const builder = new PresentationBuilder();
     const addTextSpy = vi.spyOn(builder, "addText");
@@ -18,6 +26,25 @@ describe("createBridgeFunctions", () => {
     bridge.addSlide();
     bridge.addText(0, "Salom", { bold: true });
     expect(addTextSpy).toHaveBeenCalledWith(0, "Salom", { bold: true });
+  });
+
+  it("addTable delegates to the builder", () => {
+    const builder = new PresentationBuilder();
+    const addTableSpy = vi.spyOn(builder, "addTable");
+    const bridge = createBridgeFunctions(builder, new IconCache());
+    bridge.addSlide();
+    const rows = [[{ text: "a" }, { text: "b" }]];
+    bridge.addTable(0, rows, { border: { type: "solid" } });
+    expect(addTableSpy).toHaveBeenCalledWith(0, rows, { border: { type: "solid" } });
+  });
+
+  it("addNotes delegates to the builder", () => {
+    const builder = new PresentationBuilder();
+    const addNotesSpy = vi.spyOn(builder, "addNotes");
+    const bridge = createBridgeFunctions(builder, new IconCache());
+    bridge.addSlide();
+    bridge.addNotes(0, "eslatma");
+    expect(addNotesSpy).toHaveBeenCalledWith(0, "eslatma");
   });
 
   it("addIcon throws when the icon/color combo is not cached", () => {

@@ -46,6 +46,30 @@ describe("PresentationService.generate", () => {
     expect(repo.markFailed).not.toHaveBeenCalled();
   });
 
+  it("succeeds end-to-end with a dark-background slide, a table, and speaker notes", async () => {
+    const code = `
+      const s = addSlide({ background: "1F3864" });
+      addText(s, "Salom", { color: "FFFFFF" });
+      addTable(s, [[{ text: "Ustun 1" }, { text: "Ustun 2" }]]);
+      addNotes(s, "Taqdimotchi uchun izoh");
+    `;
+    const aiClient = createMockAiClient(code);
+    const repo = createMockPresentationRepository();
+    const service = new PresentationService(aiClient, repo, createMockIconCache());
+
+    const result = await service.generate({
+      userId: 1n,
+      topic: "Test",
+      slideCount: 1,
+      language: "o'zbek",
+      themeName: "corporate",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.buffer).toBeInstanceOf(Buffer);
+    expect(repo.markFailed).not.toHaveBeenCalled();
+  });
+
   it("fails and records the reason when generated code trips the validator", async () => {
     const aiClient = createMockAiClient("require('fs');");
     const repo = createMockPresentationRepository();
